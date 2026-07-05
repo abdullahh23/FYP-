@@ -11,7 +11,7 @@ import type { UserRole } from '../../types';
 
 const roleCards = [
   { role: 'homeowner', title: 'Homeowner', icon: Home, text: 'Create projects, estimate budgets, compare quotations, and chat with contractors.' },
-  { role: 'contractor', title: 'Contractor / Builder', icon: Hammer, text: 'Receive verified homeowner requests, submit quotations, and manage project conversations.' },
+  { role: 'contractor', title: 'Contractor / Builder', icon: Hammer, text: 'Receive homeowner requests, submit quotations, and manage project conversations.' },
   { role: 'supplier', title: 'Material Supplier', icon: Package, text: 'Manage products and launch relevant promotions for active construction projects.' }
 ] as const;
 
@@ -54,7 +54,7 @@ export function RoleSelectionPage() {
         </div>
         <div className="mb-6">
           <h1 className="text-3xl font-bold">How will you use BuildWise?</h1>
-          <p className="mt-2 text-muted-foreground">Select exactly one role. Contractor and supplier public visibility remains locked until future admin verification.</p>
+          <p className="mt-2 text-muted-foreground">Select exactly one role. Professional profiles become visible as soon as they are completed.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {roleCards.map((item) => (

@@ -33,3 +33,12 @@ export const productTags = [
 ];
 
 export const projectStatuses = ['Planning', 'Contracted', 'In Progress', 'Completed'] as const;
+export const projectProgressStages = ['Planning', 'Site Visit', 'Foundation', 'Grey Structure', 'Roof', 'Electrical', 'Plaster', 'Painting', 'Finishing', 'Completed'] as const;
+
+export const productCategories = [
+  'Cement', 'Steel', 'Bricks', 'Sand', 'Crush', 'Tiles', 'Marble', 'Granite', 'Paint', 'Doors', 'Windows',
+  'Kitchen', 'Bathroom', 'Electrical', 'Lighting', 'Fans', 'AC', 'Solar', 'Plumbing', 'Wood', 'Roofing',
+  'False Ceiling', 'Glass', 'Security', 'Smart Home', 'Hardware'
+] as const;
+
+export const productUnits = ['piece', 'bag', 'ton', 'kg', 'sq ft', 'meter', 'liter', 'set'] as const;

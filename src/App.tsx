@@ -10,6 +10,10 @@ import { LandingPage } from './pages/LandingPage';
 import { DashboardRouter } from './pages/dashboard/DashboardRouter';
 import { AccountStatusPage } from './pages/AccountStatusPage';
 import { HomeownerResultsPage } from './pages/dashboard/HomeownerResultsPage';
+import { ProductDetailsPage } from './pages/marketplace/ProductDetailsPage';
+import { ContractorAvailableProjectsPage } from './pages/dashboard/ContractorAvailableProjectsPage';
+import { ContractorMessagesPage } from './pages/dashboard/ContractorMessagesPage';
+import { ContractorNotificationsPage } from './pages/dashboard/ContractorNotificationsPage';
 
 export function App() {
   return (
@@ -23,7 +27,15 @@ export function App() {
       <Route path="/account-status" element={<AccountStatusPage />} />
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardRouter />} />
-        <Route path="/dashboard/projects/:projectId/results" element={<HomeownerResultsPage />} />
+        <Route path="/dashboard/available-projects" element={<ProtectedRoute roles={['contractor']}><ContractorAvailableProjectsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/requests" element={<DashboardRouter />} />
+        <Route path="/dashboard/quotes" element={<DashboardRouter />} />
+        <Route path="/dashboard/messages" element={<ContractorMessagesPage />} />
+        <Route path="/dashboard/notifications" element={<ContractorNotificationsPage />} />
+        <Route path="/dashboard/profile" element={<DashboardRouter />} />
+        <Route path="/dashboard/settings" element={<DashboardRouter />} />
+        <Route path="/dashboard/projects/:projectId/results" element={<ProtectedRoute roles={['homeowner']}><HomeownerResultsPage /></ProtectedRoute>} />
+        <Route path="/marketplace/products/:productId" element={<ProductDetailsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

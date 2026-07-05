@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { projectTags } from '../lib/utils';
-import type { AiEstimate, ContractorMatch, Project, Promotion, Quotation } from '../types';
+import type { AiEstimate, ContractorMatch, Project, ProjectProgressStage, Promotion, Quotation, RecommendedProduct } from '../types';
 
 export type ProjectFormValues = {
   title: string;
@@ -67,16 +67,30 @@ export async function listRelevantPromotions(projectId: string) {
   return (data ?? []) as Promotion[];
 }
 
-export async function requestQuotation(project: Project, contractorId: string) {
+export async function requestQuotation(project: Project, contractorId: string, requestNotes = '') {
   const { error } = await supabase.from('quotations').upsert(
     {
       project_id: project.id,
       homeowner_id: project.homeowner_id,
       contractor_id: contractorId,
-      status: 'requested'
+      status: 'pending',
+      request_notes: requestNotes
     },
     { onConflict: 'project_id,contractor_id' }
   );
+  if (error) throw error;
+}
+
+export async function listRecommendedProducts(projectId: string) {
+  const { data, error } = await supabase.rpc('recommended_products_for_project', { project_id_input: projectId });
+  if (error) throw error;
+  return (data ?? []) as RecommendedProduct[];
+}
+
+export async function updateProjectProgress(projectId: string, stage: ProjectProgressStage, notes = '') {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error('Please sign in.');
+  const { error } = await supabase.from('project_progress_updates').insert({ project_id: projectId, stage, notes, updated_by: userData.user.id });
   if (error) throw error;
 }
 

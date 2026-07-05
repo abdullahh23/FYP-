@@ -31,6 +31,8 @@ import { createProject, listProjects, requestEstimate } from '../../services/pro
 import { Button } from '../../components/ui/button';
 import { Field, Input, Select, Toggle } from '../../components/ui/forms';
 import { useToast } from '../../components/ui/toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '../../components/ui/card';
+import { formatCurrency } from '../../lib/utils';
 
 const schema = z.object({
   title: z.string().trim().min(3, 'Give your project a descriptive name.'),
@@ -99,6 +101,7 @@ export function HomeownerDashboard() {
   const [direction, setDirection] = useState(1);
   const [phase, setPhase] = useState<'wizard' | 'estimating'>('wizard');
   const [aiProgress, setAiProgress] = useState(8);
+  const [showWizard, setShowWizard] = useState(false);
   const projects = useQuery({ queryKey: ['projects', user?.id], queryFn: () => listProjects(user!.id), enabled: Boolean(user?.id) });
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults, mode: 'onTouched' });
 
@@ -133,6 +136,7 @@ export function HomeownerDashboard() {
     },
     onSuccess: async (project) => {
       await queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      setShowWizard(false);
       navigate(`/dashboard/projects/${project.id}/results`);
     },
     onError: (error) => {
@@ -155,6 +159,72 @@ export function HomeownerDashboard() {
 
   if (phase === 'estimating') return <AiLoadingScreen progress={aiProgress} />;
 
+  const hasProjects = projects.data && projects.data.length > 0;
+
+  if (hasProjects && !showWizard) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Your Construction Projects</h1>
+            <p className="mt-1 text-muted-foreground">View previous estimates, track contractor progress, and manage your projects.</p>
+          </div>
+          <Button onClick={() => { setShowWizard(true); setStep(0); form.reset(defaults); }}>
+            <WandSparkles className="mr-2 h-4 w-4" /> Create New Estimate
+          </Button>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.data.map((project) => {
+            const minEstimate = project.ai_estimate_json?.total_estimate_min;
+            const maxEstimate = project.ai_estimate_json?.total_estimate_max;
+            return (
+              <Card key={project.id} className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                      <Home className="h-5 w-5" />
+                    </span>
+                    <Badge>
+                      {project.status}
+                    </Badge>
+                  </div>
+                  <CardTitle className="mt-4 text-xl font-bold line-clamp-1">{project.title}</CardTitle>
+                  <CardDescription className="text-sm">
+                    {project.city} · {project.plot_size} marla
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>{project.covered_area.toLocaleString()} sq ft · {project.floors} floors</p>
+                    <p>{project.construction_type} · {project.material_quality} Quality</p>
+                    {project.progress_stage && (
+                      <div className="mt-2 pt-2 border-t">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase">Progress</p>
+                        <p className="font-semibold text-primary">{project.progress_stage}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">AI Estimate Range</p>
+                      <p className="font-bold text-primary">
+                        {minEstimate && maxEstimate ? `${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}` : 'Not estimated'}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/projects/${project.id}/results`)}>
+                      View <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   const current = steps[step];
   const progress = ((step + 1) / steps.length) * 100;
 
@@ -165,17 +235,24 @@ export function HomeownerDashboard() {
           <p className="text-sm font-semibold text-primary">New cost estimate</p>
           <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Plan your construction project</h1>
         </div>
-        {projects.data?.length ? (
-          <Select
-            aria-label="Open a previous estimate"
-            className="w-full sm:w-64"
-            defaultValue=""
-            onChange={(event) => event.target.value && navigate(`/dashboard/projects/${event.target.value}/results`)}
-          >
-            <option value="" disabled>Previous estimates</option>
-            {projects.data.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
-          </Select>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {hasProjects && (
+            <Button variant="ghost" onClick={() => setShowWizard(false)}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to projects
+            </Button>
+          )}
+          {projects.data?.length ? (
+            <Select
+              aria-label="Open a previous estimate"
+              className="w-full sm:w-64"
+              defaultValue=""
+              onChange={(event) => event.target.value && navigate(`/dashboard/projects/${event.target.value}/results`)}
+            >
+              <option value="" disabled>Previous estimates</option>
+              {projects.data.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+            </Select>
+          ) : null}
+        </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between text-xs font-semibold text-muted-foreground">

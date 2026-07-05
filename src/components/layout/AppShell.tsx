@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn, initials } from '../../lib/utils';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 const navByRole = {
   homeowner: [{ to: '/dashboard', label: 'Homeowner', icon: Home }],
@@ -53,24 +54,25 @@ export function AppShell() {
               </NavLink>
             ))}
           </nav>
-          <div className="hidden items-center gap-2 md:flex">
-            <Button variant="ghost" size="icon" onClick={() => setDark((value) => !value)} aria-label="Toggle theme">
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">{initials(profile?.name)}</span>
-              <div className="text-sm">
-                <p className="font-semibold">{profile?.name ?? 'BuildWise User'}</p>
-                <p className="text-xs text-muted-foreground">{profile?.role}</p>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <div className="hidden items-center gap-2 md:flex">
+              <Button variant="ghost" size="icon" onClick={() => setDark((value) => !value)} aria-label="Toggle theme">
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2">
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">{initials(profile?.name)}</span>
+                <div className="text-sm">
+                  <p className="font-semibold">{profile?.name ?? 'BuildWise User'}</p>
+                  <p className="text-xs text-muted-foreground">{profile?.role}</p>
+                </div>
               </div>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((value) => !value)} aria-label="Open menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           </div>
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((value) => !value)} aria-label="Open menu">
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
         </div>
         {open && (
           <div className="border-t bg-background p-4 md:hidden">

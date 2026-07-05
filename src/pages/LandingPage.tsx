@@ -5,7 +5,7 @@ import { Card } from '../components/ui/card';
 
 const features = [
   { icon: Bot, title: 'AI cost estimation', text: 'Structured PKR cost ranges across land preparation, structure, utilities, and finishing.' },
-  { icon: Hammer, title: 'Verified contractor marketplace', text: 'Recommendations prioritize city fit, verification, experience, ratings, and budget compatibility.' },
+  { icon: Hammer, title: 'Smart contractor marketplace', text: 'Recommendations prioritize budget fit, city, experience, completed projects, ratings, and specialization.' },
   { icon: Package, title: 'Relevant supplier promotions', text: 'Project tags connect homeowners with materials that actually match their construction choices.' },
   { icon: MessageSquareText, title: 'Realtime collaboration', text: 'Homeowners and contractors can coordinate with text and image messages.' }
 ];
@@ -122,13 +122,13 @@ export function LandingPage() {
         </section>
         <section id="faq" className="mx-auto max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold">FAQ</h2>
-          {['Does the AI key stay private?', 'Can suppliers show random ads?', 'Are contractors public before verification?'].map((question) => (
+          {['Does the AI key stay private?', 'Can suppliers show random ads?', 'When do contractor profiles become visible?'].map((question) => (
             <div key={question} className="mt-4 rounded-xl border bg-card p-5">
               <h3 className="font-bold">{question}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 {question.includes('AI') && 'Yes. Estimation is routed through a Supabase Edge Function using NVIDIA_API_KEY server-side.'}
                 {question.includes('suppliers') && 'No. Promotions are matched using project tags and product or campaign tags.'}
-                {question.includes('contractors') && 'No. Verification fields are included now, and public matching only returns verified providers.'}
+                {question.includes('profiles') && 'Immediately after the contractor completes and saves their professional profile.'}
               </p>
             </div>
           ))}

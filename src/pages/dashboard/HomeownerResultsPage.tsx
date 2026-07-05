@@ -8,12 +8,12 @@ import {
   Building2,
   CalendarDays,
   Check,
-  CheckCircle2,
   CircleDollarSign,
   Clock3,
   Home,
   MapPin,
   MessageSquare,
+  PackageCheck,
   RefreshCw,
   Ruler,
   Send,
@@ -29,26 +29,34 @@ import {
   listProjectQuotations,
   listRelevantPromotions,
   requestEstimate,
-  requestQuotation
+  requestQuotation,
+  listRecommendedProducts
 } from '../../services/projects';
-import type { ContractorMatch, Project, Quotation } from '../../types';
+import type { ContractorMatch, Project, Quotation, RecommendedProduct } from '../../types';
 import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/forms';
 import { Badge } from '../../components/ui/card';
 import { useToast } from '../../components/ui/toast';
 import { formatCurrency } from '../../lib/utils';
-import { projectStatuses } from '../../lib/constants';
+import { projectProgressStages } from '../../lib/constants';
 import { ChatPanel } from '../../components/chat/ChatPanel';
+import { acceptMaterialQuote, listMaterialQuoteRequests, requestMaterialQuote } from '../../services/suppliers';
 
 export function HomeownerResultsPage() {
   const { projectId } = useParams();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeChat, setActiveChat] = useState<{ contractorId: string; name: string; quotationId?: string } | null>(null);
+  const [supplierChat, setSupplierChat] = useState<{ supplierId: string; name: string } | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [requestNotes, setRequestNotes] = useState('');
   const project = useQuery({ queryKey: ['project', projectId], queryFn: () => getProject(projectId!), enabled: Boolean(projectId) });
   const contractors = useQuery({ queryKey: ['contractors', projectId], queryFn: () => listContractorMatches(projectId!), enabled: Boolean(projectId) });
   const quotations = useQuery({ queryKey: ['quotations', projectId], queryFn: () => listProjectQuotations(projectId!), enabled: Boolean(projectId) });
   const promotions = useQuery({ queryKey: ['promotions', projectId], queryFn: () => listRelevantPromotions(projectId!), enabled: Boolean(projectId) });
+  const recommendedProducts = useQuery({ queryKey: ['recommended-products', projectId], queryFn: () => listRecommendedProducts(projectId!), enabled: Boolean(projectId) });
+  const materialQuotes = useQuery({ queryKey: ['homeowner-material-quotes', user?.id], queryFn: () => listMaterialQuoteRequests(user!.id, 'homeowner'), enabled: Boolean(user?.id) });
 
   const retryMutation = useMutation({
     mutationFn: () => requestEstimate(projectId!),
@@ -69,7 +77,7 @@ export function HomeownerResultsPage() {
 
   async function sendQuotationRequest(contractor: ContractorMatch) {
     try {
-      await requestQuotation(project.data!, contractor.user_id);
+      await requestQuotation(project.data!, contractor.user_id, requestNotes);
       toast({ title: 'Quotation requested', description: `${contractor.name} can now respond.`, type: 'success' });
       queryClient.invalidateQueries({ queryKey: ['quotations', projectId] });
     } catch (error) {
@@ -86,6 +94,25 @@ export function HomeownerResultsPage() {
     } catch (error) {
       toast({ title: 'Could not accept quotation', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
     }
+  }
+
+  async function requestSelectedMaterials() {
+    if (!user?.id || !projectId || !selectedProducts.length) return;
+    const selected = recommendedProducts.data?.filter((item) => selectedProducts.includes(item.product.id)) ?? [];
+    const suppliers = new Map<string, RecommendedProduct[]>();
+    selected.forEach((item) => suppliers.set(item.product.supplier_id, [...(suppliers.get(item.product.supplier_id) ?? []), item]));
+    try {
+      await Promise.all(Array.from(suppliers.entries()).map(([supplierId, items]) => requestMaterialQuote({ projectId, homeownerId: user.id, supplierId, products: items.map((item) => ({ productId: item.product.id, quantity: 1 })) })));
+      setSelectedProducts([]);
+      toast({ title: 'Material quote requested', description: `${suppliers.size} supplier${suppliers.size === 1 ? '' : 's'} received your request.`, type: 'success' });
+    } catch (error) {
+      toast({ title: 'Material request failed', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
+    }
+  }
+
+  async function chooseMaterialQuote(requestId: string) {
+    try { await acceptMaterialQuote(requestId); await materialQuotes.refetch(); toast({ title: 'Supplier quotation accepted', type: 'success' }); }
+    catch (error) { toast({ title: 'Could not accept supplier quote', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' }); }
   }
 
   const currentProject = project.data;
@@ -134,17 +161,19 @@ export function HomeownerResultsPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
-          <SectionHeading eyebrow="Best fit first" title="Recommended contractors" description="Ranked by city, verification, experience, ratings, completed projects, specialization, and budget fit." />
+          <SectionHeading eyebrow="Best fit first" title="Recommended contractors" description="Ranked by budget fit, city, experience, completed projects, rating, specialization, and material preference." />
+          <Textarea className="mt-5 min-h-20" value={requestNotes} onChange={(event) => setRequestNotes(event.target.value)} placeholder="Optional notes included with every quote request" />
           <div className="mt-6 grid gap-3">
             {contractors.data?.length ? contractors.data.map((contractor) => (
               <ContractorRow key={contractor.user_id} contractor={contractor} onRequest={() => sendQuotationRequest(contractor)} />
-            )) : <InlineEmpty>No verified contractors match this project yet.</InlineEmpty>}
+            )) : <InlineEmpty>No completed contractor profiles match this project yet.</InlineEmpty>}
           </div>
         </div>
 
         <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
           <SectionHeading eyebrow="Matched to your build" title="Supplier offers" description="Relevant promotions selected from your project tags." />
           <div className="mt-6 grid gap-3">
+            {materialQuotes.data?.filter((quote) => quote.project_id === projectId).map((quote) => <div key={quote.id} className="rounded-lg border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{quote.supplier?.company_name ?? 'Supplier quotation'}</p><p className="text-xs text-muted-foreground">{quote.delivery_time ?? 'Delivery pending'}</p></div><Badge tone={quote.status === 'accepted' ? 'success' : 'neutral'}>{quote.status}</Badge></div>{quote.total_price != null && <p className="mt-3 text-xl font-bold text-primary">{formatCurrency(quote.total_price)}</p>}<p className="mt-1 text-sm text-muted-foreground">Discount {quote.discount}% · {quote.notes}</p>{quote.status === 'negotiating' && <Button className="mt-3" size="sm" onClick={() => chooseMaterialQuote(quote.id)}>Accept offer</Button>}</div>)}
             {promotions.data?.length ? promotions.data.map((promotion) => (
               <div key={promotion.id} className="rounded-lg border p-4">
                 <div className="flex items-start justify-between gap-3"><p className="font-bold">{promotion.title}</p><ArrowUpRight className="h-4 w-4 text-primary" /></div>
@@ -157,6 +186,27 @@ export function HomeownerResultsPage() {
       </section>
 
       <section className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <SectionHeading eyebrow="Smart marketplace" title="Recommended products" description="Matched to your material grade, construction scope, and selected project features." />
+          {selectedProducts.length > 0 && <Button onClick={requestSelectedMaterials}><PackageCheck className="h-4 w-4" /> Request material quote ({selectedProducts.length})</Button>}
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {recommendedProducts.data?.length ? recommendedProducts.data.map((item) => {
+            const finalPrice = item.product.price * (1 - item.product.discount / 100);
+            const selected = selectedProducts.includes(item.product.id);
+            return <div key={item.product.id} className={`rounded-lg border p-4 ${selected ? 'border-primary bg-primary/[0.04]' : ''}`}>
+              {item.product.image_urls[0] && <img src={item.product.image_urls[0]} alt={item.product.name} className="mb-4 aspect-[16/10] w-full rounded-lg object-cover" />}
+              <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-primary">{item.product.brand}</p><Link to={`/marketplace/products/${item.product.id}`} className="font-bold hover:text-primary">{item.product.name}</Link></div>{item.product.discount > 0 && <Badge tone="success">-{item.product.discount}%</Badge>}</div>
+              <p className="mt-2 text-lg font-bold">{formatCurrency(finalPrice)} <span className="text-xs font-normal text-muted-foreground">/{item.product.unit}</span></p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.supplier.company_name} · {item.product.delivery_time ?? 'Delivery on request'}</p>
+              <div className="mt-4 flex gap-2"><Button size="sm" variant={selected ? 'primary' : 'secondary'} onClick={() => setSelectedProducts((current) => selected ? current.filter((id) => id !== item.product.id) : [...current, item.product.id])}>{selected ? 'Selected' : 'Compare & quote'}</Button><Button size="sm" variant="ghost" onClick={() => setSupplierChat({ supplierId: item.product.supplier_id, name: item.supplier.company_name })}><MessageSquare className="h-4 w-4" /> Chat</Button></div>
+            </div>;
+          }) : <div className="sm:col-span-2 xl:col-span-3"><InlineEmpty>No products match this project yet. Recommendations appear as suppliers publish tagged products.</InlineEmpty></div>}
+        </div>
+        {selectedProducts.length > 1 && <ProductComparison items={(recommendedProducts.data ?? []).filter((item) => selectedProducts.includes(item.product.id))} />}
+      </section>
+
+      <section className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
         <SectionHeading eyebrow="Compare with confidence" title="Quotations" description="Review contractor offers side by side. Accepting one automatically rejects the others." />
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {quotations.data?.length ? quotations.data.map((quote) => (
@@ -166,6 +216,7 @@ export function HomeownerResultsPage() {
       </section>
 
       {activeChat && <ChatPanel projectId={currentProject.id} peerId={activeChat.contractorId} quotationId={activeChat.quotationId} peerName={activeChat.name} />}
+      {supplierChat && <ChatPanel projectId={currentProject.id} peerId={supplierChat.supplierId} peerName={supplierChat.name} />}
     </div>
   );
 }
@@ -214,8 +265,8 @@ function EstimateAnalytics({ project }: { project: Project }) {
       <div className="rounded-lg border bg-card p-5 shadow-panel lg:col-span-2 sm:p-6">
         <p className="mb-5 text-sm font-bold">Project journey</p>
         <div className="grid gap-3 sm:grid-cols-4">
-          {projectStatuses.map((status, index) => {
-            const activeIndex = projectStatuses.indexOf(project.status);
+          {projectProgressStages.map((status, index) => {
+            const activeIndex = projectProgressStages.indexOf(project.progress_stage ?? 'Planning');
             const complete = index <= activeIndex;
             return (
               <div key={status} className={`flex items-center gap-3 rounded-lg border p-3 text-sm font-semibold ${complete ? 'border-primary/30 bg-primary/[0.06] text-primary' : 'text-muted-foreground'}`}>
@@ -235,7 +286,7 @@ function ContractorRow({ contractor, onRequest }: { contractor: ContractorMatch;
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 font-bold text-primary">{contractor.name.slice(0, 2).toUpperCase()}</span>
-          <div><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{contractor.name}</p><Badge tone="success"><CheckCircle2 className="mr-1 h-3 w-3" /> Verified</Badge></div><p className="mt-1 text-sm text-muted-foreground">{contractor.specialization} · {contractor.city ?? 'Flexible location'}</p></div>
+          <div><p className="font-bold">{contractor.name}</p><p className="mt-1 text-sm text-muted-foreground">{contractor.specialization} · {contractor.city ?? 'Flexible location'}</p></div>
         </div>
         <Button size="sm" onClick={onRequest}><Send className="h-4 w-4" /> Request quote</Button>
       </div>
@@ -254,7 +305,18 @@ function QuotationCard({ quote, onAccept, onChat }: { quote: Quotation; onAccept
       <p className="mt-5 text-2xl font-bold text-primary">{quote.amount ? formatCurrency(quote.amount) : 'Awaiting quote'}</p>
       <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">{quote.duration_days && <span className="flex items-center gap-1"><Clock3 className="h-4 w-4" /> {quote.duration_days} days</span>}{quote.timeline && <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> {quote.timeline}</span>}</div>
       {quote.notes && <p className="mt-4 border-t pt-4 text-sm leading-6 text-muted-foreground">{quote.notes}</p>}
-      <div className="mt-5 flex gap-2">{quote.status === 'submitted' && <Button size="sm" onClick={onAccept}><Check className="h-4 w-4" /> Accept</Button>}<Button size="sm" variant="secondary" onClick={onChat}><MessageSquare className="h-4 w-4" /> Chat</Button></div>
+      <div className="mt-5 flex gap-2">{quote.status === 'negotiating' && <Button size="sm" onClick={onAccept}><Check className="h-4 w-4" /> Accept</Button>}<Button size="sm" variant="secondary" onClick={onChat}><MessageSquare className="h-4 w-4" /> Chat</Button></div>
+    </div>
+  );
+}
+
+function ProductComparison({ items }: { items: RecommendedProduct[] }) {
+  return (
+    <div className="mt-6 overflow-x-auto rounded-lg border">
+      <table className="w-full min-w-[760px] text-left text-sm">
+        <thead className="bg-muted/60 text-xs uppercase text-muted-foreground"><tr><th className="p-3">Product / Supplier</th><th className="p-3">Price</th><th className="p-3">Discount</th><th className="p-3">Delivery</th><th className="p-3">Rating</th><th className="p-3">Warranty</th></tr></thead>
+        <tbody>{items.map((item) => <tr key={item.product.id} className="border-t"><td className="p-3 font-semibold">{item.product.name}<span className="block text-xs font-normal text-muted-foreground">{item.supplier.company_name}</span></td><td className="p-3">{formatCurrency(item.product.price * (1 - item.product.discount / 100))}</td><td className="p-3">{item.product.discount}%</td><td className="p-3">{item.product.delivery_time ?? 'On request'}</td><td className="p-3">{item.supplier.average_rating.toFixed(1)}</td><td className="p-3">{item.product.warranty ?? 'Not listed'}</td></tr>)}</tbody>
+      </table>
     </div>
   );
 }
