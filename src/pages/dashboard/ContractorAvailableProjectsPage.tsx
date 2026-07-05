@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, MessageSquareText, Send, X } from 'lucide-react';
+import { AlertTriangle, Brain, Clock, Eye, Lightbulb, MessageSquareText, Send, X } from 'lucide-react';
 import { ContractorWorkspace } from './ContractorWorkspace';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Field, Input, Select, Textarea } from '../../components/ui/forms';
@@ -125,24 +125,145 @@ export function ContractorAvailableProjectsPage() {
 
       {details && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto">
-            <CardHeader className="flex flex-row items-start justify-between gap-4"><div><CardTitle>{details.title}</CardTitle><CardDescription>{details.homeowner?.name ?? 'Homeowner'} · {details.city}</CardDescription></div><Button type="button" variant="ghost" size="icon" onClick={() => setDetails(null)}><X className="h-4 w-4" /></Button></CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <Info label="Plot size" value={`${details.plot_size} marla`} />
-              <Info label="Covered area" value={`${details.covered_area.toLocaleString()} sq ft`} />
-              <Info label="Floors" value={`${details.floors}`} />
-              <Info label="Basement" value={details.basement ? 'Yes' : 'No'} />
-              <Info label="Soil type" value={details.soil_type ?? 'Not set'} />
-              <Info label="Construction type" value={details.construction_type} />
-              <Info label="Material quality" value={details.material_quality} />
-              <Info label="Interior finish" value={details.interior_finish ?? 'Not set'} />
-              <Info label="Exterior finish" value={details.exterior_finish ?? 'Not set'} />
-              <Info label="Budget" value={details.ai_estimate_json ? `${formatCurrency(details.ai_estimate_json.total_estimate_min)} - ${formatCurrency(details.ai_estimate_json.total_estimate_max)}` : 'Not estimated'} />
-              <Info label="Parking" value={details.parking ? 'Yes' : 'No'} />
-              <Info label="Solar Power" value={details.solar ? 'Yes' : 'No'} />
-              <Info label="Smart Home" value={details.smart_home ? 'Yes' : 'No'} />
-              <Info label="Garden" value={details.garden ? 'Yes' : 'No'} />
-              <Info label="Swimming Pool" value={details.swimming_pool ? 'Yes' : 'No'} />
+          <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle>{details.title}</CardTitle>
+                <CardDescription>{details.homeowner?.name ?? 'Homeowner'} · {details.city}</CardDescription>
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setDetails(null)}><X className="h-4 w-4" /></Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Project specs */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Info label="Plot size" value={`${details.plot_size} marla`} />
+                <Info label="Covered area" value={`${details.covered_area.toLocaleString()} sq ft`} />
+                <Info label="Floors" value={`${details.floors}`} />
+                <Info label="Basement" value={details.basement ? 'Yes' : 'No'} />
+                <Info label="Soil type" value={details.soil_type ?? 'Not set'} />
+                <Info label="Construction type" value={details.construction_type} />
+                <Info label="Material quality" value={details.material_quality} />
+                <Info label="Interior finish" value={details.interior_finish ?? 'Not set'} />
+                <Info label="Exterior finish" value={details.exterior_finish ?? 'Not set'} />
+                <Info label="Parking" value={details.parking ? 'Yes' : 'No'} />
+                <Info label="Solar Power" value={details.solar ? 'Yes' : 'No'} />
+                <Info label="Smart Home" value={details.smart_home ? 'Yes' : 'No'} />
+                <Info label="Garden" value={details.garden ? 'Yes' : 'No'} />
+                <Info label="Swimming Pool" value={details.swimming_pool ? 'Yes' : 'No'} />
+              </div>
+
+              {/* AI Estimate full breakdown */}
+              {details.ai_estimate_json ? (
+                <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 p-5 space-y-5">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/15">
+                      <Brain className="h-4 w-4 text-primary" />
+                    </span>
+                    <div>
+                      <p className="font-bold">AI-Generated Estimate</p>
+                      <p className="text-xs text-muted-foreground">Generated by BuildWise AI in PKR</p>
+                    </div>
+                    <div className="ml-auto text-right">
+                      <p className="text-xs text-muted-foreground">Budget Range</p>
+                      <p className="font-bold text-primary text-lg">
+                        {formatCurrency((details.ai_estimate_json as any).total_estimate_min)} – {formatCurrency((details.ai_estimate_json as any).total_estimate_max)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Cost line items */}
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {Object.entries(details.ai_estimate_json)
+                      .filter(([k, v]) => typeof v === 'number' && v > 0 && !['total_estimate_min', 'total_estimate_max', 'confidence'].includes(k))
+                      .map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between rounded-lg border bg-background/70 px-3 py-2 text-sm">
+                          <span className="capitalize text-muted-foreground">{k.replace(/_cost$/, '').replace(/_/g, ' ')}</span>
+                          <span className="font-bold">{formatCurrency(v as number)}</span>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Timeline & confidence */}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(details.ai_estimate_json as any).timeline && (
+                      <div className="flex items-start gap-2 rounded-lg border bg-background/70 p-3">
+                        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <div>
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">Timeline</p>
+                          <p className="text-sm font-semibold">{(details.ai_estimate_json as any).timeline}</p>
+                        </div>
+                      </div>
+                    )}
+                    {(details.ai_estimate_json as any).confidence !== undefined && (
+                      <div className="rounded-lg border bg-background/70 p-3">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">AI Confidence</p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(details.ai_estimate_json as any).confidence}%` }} />
+                          </div>
+                          <span className="text-sm font-bold text-primary">{(details.ai_estimate_json as any).confidence}%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Explanation */}
+                  {(details.ai_estimate_json as any).explanation && (
+                    <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
+                      <p className="mb-1 text-xs font-bold uppercase text-primary">AI Explanation</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{(details.ai_estimate_json as any).explanation}</p>
+                    </div>
+                  )}
+
+                  {/* Suggestions */}
+                  {Array.isArray((details.ai_estimate_json as any).suggestions) && (details.ai_estimate_json as any).suggestions.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5 text-emerald-500" />
+                        <p className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400">Cost-Saving Suggestions</p>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {(details.ai_estimate_json as any).suggestions.map((tip: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />{tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Risks */}
+                  {Array.isArray((details.ai_estimate_json as any).risk_factors) && (details.ai_estimate_json as any).risk_factors.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                        <p className="text-xs font-bold uppercase text-amber-600 dark:text-amber-400">Identified Risks</p>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {(details.ai_estimate_json as any).risk_factors.map((risk: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />{risk}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
+                  No AI estimate generated for this project yet.
+                </p>
+              )}
+
+              {/* Action buttons inside modal */}
+              <div className="flex gap-2 pt-2">
+                <Button type="button" onClick={() => { setQuoteTarget(details); setDetails(null); }}>
+                  <Send className="h-4 w-4" /> Send Quote
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => { startChat(details); setDetails(null); }}>
+                  <MessageSquareText className="h-4 w-4" /> Start Chat
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
