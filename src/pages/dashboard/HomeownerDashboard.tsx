@@ -41,12 +41,14 @@ import {
   archiveProject,
   duplicateProject
 } from '../../services/projects';
+import { listConversationsForUser } from '../../services/chat';
 import { Button } from '../../components/ui/button';
 import { Field, Input, Select, Toggle } from '../../components/ui/forms';
 import { useToast } from '../../components/ui/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '../../components/ui/card';
 import { formatCurrency, cn } from '../../lib/utils';
 import { DeleteProjectModal } from '../../components/modal/DeleteProjectModal';
+
 
 const schema = z.object({
   title: z.string().trim().min(3, 'Give your project a descriptive name.'),
@@ -120,7 +122,9 @@ export function HomeownerDashboard() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const projects = useQuery({ queryKey: ['projects', user?.id], queryFn: () => listProjects(user!.id), enabled: Boolean(user?.id) });
+  const conversations = useQuery({ queryKey: ['conversations', user?.id], queryFn: () => listConversationsForUser(user!.id), enabled: Boolean(user?.id) });
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults, mode: 'onTouched' });
+
 
   useEffect(() => {
     if (phase !== 'estimating') return;
@@ -392,7 +396,40 @@ export function HomeownerDashboard() {
           </div>
         )}
 
+        {conversations.data && conversations.data.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Recent Messages</CardTitle>
+              <CardDescription>Resume chatting with your contractors and suppliers.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {conversations.data.slice(0, 6).map((thread) => {
+                const isContractor = Boolean(thread.contractor_id);
+                const peerName = isContractor ? (thread.contractor?.name ?? 'Contractor') : (thread.supplier?.company_name ?? 'Supplier');
+                const targetUrl = isContractor
+                  ? `/dashboard/projects/${thread.project_id}/results?chatContractorId=${thread.contractor_id}&name=${encodeURIComponent(peerName)}&quotationId=${thread.quotation_id || ''}`
+                  : `/dashboard/projects/${thread.project_id}/results?chatSupplierId=${thread.supplier_id}&name=${encodeURIComponent(peerName)}`;
+                return (
+                  <button
+                    key={thread.id}
+                    type="button"
+                    className="rounded-xl border p-4 text-left hover:bg-muted transition-colors flex flex-col justify-between"
+                    onClick={() => navigate(targetUrl)}
+                  >
+                    <div>
+                      <p className="font-semibold">{peerName}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{thread.projects?.title ?? 'Project conversation'}</p>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">{thread.last_message_at ? new Date(thread.last_message_at).toLocaleString() : 'No messages yet'}</p>
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         <DeleteProjectModal
+
           open={Boolean(deleteTarget)}
           projectTitle={deleteTarget?.title ?? ''}
           loading={deleteMutation.isPending}

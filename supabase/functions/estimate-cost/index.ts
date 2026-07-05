@@ -1,4 +1,4 @@
-﻿import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,7 +73,7 @@ Return ONLY valid JSON with EXACTLY these keys (no markdown, no extra text):
 Rules:
 - All cost values must be realistic positive numbers in PKR.
 - total_estimate_min must be <= total_estimate_max.
-- total_estimate_min and total_estimate_max must roughly equal the sum of all cost line items (with a ±10% buffer).
+- total_estimate_min and total_estimate_max must roughly equal the sum of all cost line items (with a +/-10% buffer).
 - confidence must be between 0 and 100.
 - explanation must be at least 100 characters explaining the breakdown methodology.
 - pricing_basis must state the data source or clearly say "This estimate is based on regional construction cost averages for Pakistan."
@@ -142,10 +142,9 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const nvidiaKey = Deno.env.get('NVIDIA_API_KEY');
 
-  if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return json({ message: 'Supabase environment is not fully configured.' }, 500);
   }
   if (!nvidiaKey) {
@@ -153,10 +152,10 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get('Authorization') ?? '';
+  // Use user JWT for all DB operations — no service role key needed
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } }
   });
-  const adminClient = createClient(supabaseUrl, serviceKey);
 
   const { data: userData, error: userError } = await userClient.auth.getUser();
   if (userError || !userData.user) return json({ message: 'Authentication required.' }, 401);
@@ -206,7 +205,8 @@ Deno.serve(async (req) => {
 
       const estimate = parseEstimate(content);
 
-      const { error: updateError } = await adminClient
+      // Write back using user's JWT (project row belongs to them, so RLS allows update)
+      const { error: updateError } = await userClient
         .from('projects')
         .update({ ai_estimate_json: estimate, ai_error: null, ai_estimated_at: new Date().toISOString() })
         .eq('id', projectId);
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  await adminClient.from('projects').update({ ai_error: lastError }).eq('id', projectId);
+  await userClient.from('projects').update({ ai_error: lastError }).eq('id', projectId);
   return json({
     message: 'The project was saved but the AI estimate could not be generated right now. Please retry in a moment.',
     details: lastError

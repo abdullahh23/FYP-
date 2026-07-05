@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -41,12 +41,15 @@ import { formatCurrency } from '../../lib/utils';
 import { projectProgressStages } from '../../lib/constants';
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { acceptMaterialQuote, listMaterialQuoteRequests, requestMaterialQuote } from '../../services/suppliers';
+import { getConversation, sendMessage } from '../../services/chat';
+
 
 export function HomeownerResultsPage() {
   const { projectId } = useParams();
   const { profile, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [activeChat, setActiveChat] = useState<{ contractorId: string; name: string; quotationId?: string } | null>(null);
   const [supplierChat, setSupplierChat] = useState<{ supplierId: string; name: string } | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -57,6 +60,21 @@ export function HomeownerResultsPage() {
   const promotions = useQuery({ queryKey: ['promotions', projectId], queryFn: () => listRelevantPromotions(projectId!), enabled: Boolean(projectId) });
   const recommendedProducts = useQuery({ queryKey: ['recommended-products', projectId], queryFn: () => listRecommendedProducts(projectId!), enabled: Boolean(projectId) });
   const materialQuotes = useQuery({ queryKey: ['homeowner-material-quotes', user?.id], queryFn: () => listMaterialQuoteRequests(user!.id, 'homeowner'), enabled: Boolean(user?.id) });
+
+  useEffect(() => {
+    const chatContractorId = searchParams.get('chatContractorId');
+    const chatSupplierId = searchParams.get('chatSupplierId');
+    const qId = searchParams.get('quotationId');
+    const name = searchParams.get('name');
+    if (chatContractorId) {
+      setActiveChat({ contractorId: chatContractorId, name: name ?? 'Contractor', quotationId: qId ?? undefined });
+      setTimeout(() => document.getElementById('homeowner-chat')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    } else if (chatSupplierId) {
+      setSupplierChat({ supplierId: chatSupplierId, name: name ?? 'Supplier' });
+      setTimeout(() => document.getElementById('homeowner-chat')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
+  }, [searchParams]);
+
 
   const retryMutation = useMutation({
     mutationFn: () => requestEstimate(projectId!),
@@ -77,13 +95,32 @@ export function HomeownerResultsPage() {
 
   async function sendQuotationRequest(contractor: ContractorMatch) {
     try {
-      await requestQuotation(project.data!, contractor.user_id, requestNotes);
+      const quotation = await requestQuotation(project.data!, contractor.user_id, requestNotes);
+      
+      // Immediately initialize chat session and send welcome message
+      const conversation = await getConversation(project.data!.id, contractor.user_id, user!.id, quotation.id);
+      await sendMessage({
+        project_id: project.data!.id,
+        quotation_id: quotation.id,
+        conversation_id: conversation.id,
+        sender_id: user!.id,
+        receiver_id: contractor.user_id,
+        message_type: 'text',
+        body: `Hello! I have requested a quote for my project: "${project.data!.title}". Let's discuss details and pricing here.`,
+        image_url: null,
+        file_url: null,
+        file_name: null,
+        mime_type: null
+      });
+
       toast({ title: 'Quotation requested', description: `${contractor.name} can now respond.`, type: 'success' });
       queryClient.invalidateQueries({ queryKey: ['quotations', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });
     } catch (error) {
       toast({ title: 'Request failed', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
     }
   }
+
 
   async function chooseQuotation(quotation: Quotation) {
     try {
@@ -215,9 +252,14 @@ export function HomeownerResultsPage() {
         </div>
       </section>
 
-      {activeChat && <ChatPanel projectId={currentProject.id} peerId={activeChat.contractorId} quotationId={activeChat.quotationId} peerName={activeChat.name} />}
-      {supplierChat && <ChatPanel projectId={currentProject.id} peerId={supplierChat.supplierId} peerName={supplierChat.name} />}
+      {(activeChat || supplierChat) && (
+        <div id="homeowner-chat">
+          {activeChat && <ChatPanel projectId={currentProject.id} peerId={activeChat.contractorId} quotationId={activeChat.quotationId} peerName={activeChat.name} />}
+          {supplierChat && <ChatPanel projectId={currentProject.id} peerId={supplierChat.supplierId} peerName={supplierChat.name} />}
+        </div>
+      )}
     </div>
+
   );
 }
 

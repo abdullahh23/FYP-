@@ -302,20 +302,32 @@ export function ContractorDashboard() {
               </div>
               <Button type="button" variant="ghost" size="icon" onClick={() => setDetails(null)}><X className="h-4 w-4" /></Button>
             </CardHeader>
-            <CardContent className="grid gap-4">
+            <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Info label="Name" value={details.homeowner?.name ?? 'Homeowner'} />
                 <Info label="City" value={details.projects?.city ?? details.homeowner?.city ?? 'Not set'} />
-                <Info label="Project history" value={`${rows.filter((request) => request.homeowner_id === details.homeowner_id).length} request(s) with you`} />
-                <Info label="Current project" value={details.projects?.title ?? 'Project request'} />
-                <Info label="Budget" value={details.projects?.ai_estimate_json ? `${formatCurrency(details.projects.ai_estimate_json.total_estimate_min)} - ${formatCurrency(details.projects.ai_estimate_json.total_estimate_max)}` : 'Not estimated'} />
-                <Info label="Preferred material quality" value={details.projects?.material_quality ?? 'Not set'} />
+                <Info label="Project Title" value={details.projects?.title ?? 'Project request'} />
+                <Info label="AI Estimate Budget" value={details.projects?.ai_estimate_json ? `${formatCurrency(details.projects.ai_estimate_json.total_estimate_min)} - ${formatCurrency(details.projects.ai_estimate_json.total_estimate_max)}` : 'Not estimated'} />
+                <Info label="Plot Size" value={details.projects?.plot_size ? `${details.projects.plot_size} marla` : 'Not set'} />
+                <Info label="Covered Area" value={details.projects?.covered_area ? `${details.projects.covered_area.toLocaleString()} sq ft` : 'Not set'} />
+                <Info label="Floors" value={details.projects?.floors ? String(details.projects.floors) : 'Not set'} />
+                <Info label="Basement" value={details.projects?.basement ? 'Yes' : 'No'} />
+                <Info label="Soil Type" value={details.projects?.soil_type ?? 'Not set'} />
+                <Info label="Construction Type" value={details.projects?.construction_type ?? 'Not set'} />
+                <Info label="Preferred Material Quality" value={details.projects?.material_quality ?? 'Not set'} />
+                <Info label="Interior Finish" value={details.projects?.interior_finish ?? 'Not set'} />
+                <Info label="Exterior Finish" value={details.projects?.exterior_finish ?? 'Not set'} />
+                <Info label="Parking" value={details.projects?.parking ? 'Yes' : 'No'} />
+                <Info label="Solar Power" value={details.projects?.solar ? 'Yes' : 'No'} />
+                <Info label="Smart Home" value={details.projects?.smart_home ? 'Yes' : 'No'} />
+                <Info label="Garden" value={details.projects?.garden ? 'Yes' : 'No'} />
+                <Info label="Swimming Pool" value={details.projects?.swimming_pool ? 'Yes' : 'No'} />
               </div>
-              <Info label="Requested features" value={requestedFeatures(details.projects).join(', ') || 'No optional features selected'} />
               {details.request_notes && <Info label="Request notes" value={details.request_notes} />}
             </CardContent>
           </Card>
         </div>
+
       )}
 
       {quoteTarget && (

@@ -68,7 +68,7 @@ export async function listRelevantPromotions(projectId: string) {
 }
 
 export async function requestQuotation(project: Project, contractorId: string, requestNotes = '') {
-  const { error } = await supabase.from('quotations').upsert(
+  const { data, error } = await supabase.from('quotations').upsert(
     {
       project_id: project.id,
       homeowner_id: project.homeowner_id,
@@ -77,9 +77,11 @@ export async function requestQuotation(project: Project, contractorId: string, r
       request_notes: requestNotes
     },
     { onConflict: 'project_id,contractor_id' }
-  );
+  ).select().single();
   if (error) throw error;
+  return data as Quotation;
 }
+
 
 export async function listRecommendedProducts(projectId: string) {
   const { data, error } = await supabase.rpc('recommended_products_for_project', { project_id_input: projectId });

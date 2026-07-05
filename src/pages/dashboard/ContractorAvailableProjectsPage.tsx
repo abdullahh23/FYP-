@@ -129,15 +129,25 @@ export function ContractorAvailableProjectsPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-4"><div><CardTitle>{details.title}</CardTitle><CardDescription>{details.homeowner?.name ?? 'Homeowner'} · {details.city}</CardDescription></div><Button type="button" variant="ghost" size="icon" onClick={() => setDetails(null)}><X className="h-4 w-4" /></Button></CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <Info label="Plot size" value={`${details.plot_size} marla`} />
-              <Info label="Covered area" value={`${details.covered_area} sq ft`} />
+              <Info label="Covered area" value={`${details.covered_area.toLocaleString()} sq ft`} />
               <Info label="Floors" value={`${details.floors}`} />
-              <Info label="Material quality" value={details.material_quality} />
+              <Info label="Basement" value={details.basement ? 'Yes' : 'No'} />
+              <Info label="Soil type" value={details.soil_type ?? 'Not set'} />
               <Info label="Construction type" value={details.construction_type} />
+              <Info label="Material quality" value={details.material_quality} />
+              <Info label="Interior finish" value={details.interior_finish ?? 'Not set'} />
+              <Info label="Exterior finish" value={details.exterior_finish ?? 'Not set'} />
               <Info label="Budget" value={details.ai_estimate_json ? `${formatCurrency(details.ai_estimate_json.total_estimate_min)} - ${formatCurrency(details.ai_estimate_json.total_estimate_max)}` : 'Not estimated'} />
+              <Info label="Parking" value={details.parking ? 'Yes' : 'No'} />
+              <Info label="Solar Power" value={details.solar ? 'Yes' : 'No'} />
+              <Info label="Smart Home" value={details.smart_home ? 'Yes' : 'No'} />
+              <Info label="Garden" value={details.garden ? 'Yes' : 'No'} />
+              <Info label="Swimming Pool" value={details.swimming_pool ? 'Yes' : 'No'} />
             </CardContent>
           </Card>
         </div>
       )}
+
 
       {quoteTarget && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
