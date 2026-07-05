@@ -1,46 +1,57 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '../../components/ui/button';
+import { Field, Input } from '../../components/ui/forms';
 import { useAuth } from '../../contexts/AuthContext';
-import { AuthLayout, AuthInput, AuthButton, AuthLink } from '../../components/auth/AuthLayout';
+import { useToast } from '../../components/ui/toast';
+import { AuthFrame } from './LoginPage';
+
+const schema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email(),
+  phone: z.string().min(7, 'Phone is required'),
+  password: z.string().min(8, 'Use at least 8 characters')
+});
 
 export function SignupPage() {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
-  const navigate = useNavigate();
+  const { toast } = useToast();
+  const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { name: '', email: '', phone: '', password: '' } });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
+  async function onSubmit(values: z.infer<typeof schema>) {
+    try {
+      await signUp(values);
+      toast({ title: 'Check your inbox', description: 'Verify your email, then sign in and choose your BuildWise role.', type: 'success' });
+    } catch (error) {
+      toast({ title: 'Signup failed', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
     }
-    setLoading(true);
-    const { error: err } = await signUp(email, password, fullName);
-    setLoading(false);
-    if (err) {
-      setError(err);
-      return;
-    }
-    navigate('/verify-email');
-  };
+  }
 
   return (
-    <AuthLayout title="Create account" subtitle="Start managing your dispatch loads">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <AuthInput label="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} required autoComplete="name" />
-        <AuthInput label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
-        <AuthInput label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" />
-        {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
-        <AuthButton loading={loading}>Create Account</AuthButton>
-        <p className="text-center text-sm text-steel">
-          Already have an account? <AuthLink to="/login">Sign in</AuthLink>
-        </p>
+    <AuthFrame title="Create your BuildWise account" subtitle="Your role is selected after your first verified login.">
+      <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <Field label="Full name" error={form.formState.errors.name?.message}>
+          <Input {...form.register('name')} />
+        </Field>
+        <Field label="Email" error={form.formState.errors.email?.message}>
+          <Input type="email" {...form.register('email')} />
+        </Field>
+        <Field label="Phone" error={form.formState.errors.phone?.message}>
+          <Input {...form.register('phone')} />
+        </Field>
+        <Field label="Password" error={form.formState.errors.password?.message}>
+          <Input type="password" {...form.register('password')} />
+        </Field>
+        <Button loading={form.formState.isSubmitting}>Create account</Button>
       </form>
-    </AuthLayout>
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        Already registered?{' '}
+        <Link className="font-semibold text-primary" to="/login">
+          Sign in
+        </Link>
+      </p>
+    </AuthFrame>
   );
 }

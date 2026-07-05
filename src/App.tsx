@@ -1,41 +1,31 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute, AdminRoute, AuthRoute, VerifyEmailRoute } from './components/auth/ProtectedRoute';
-import { UserLayout } from './layouts/UserLayout';
-import { AdminLayout } from './layouts/AdminLayout';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from './components/layout/AppShell';
+import { GuestRoute, ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
-import { DashboardRoute } from './pages/DashboardRoute';
-import { InvoiceRoute } from './pages/InvoiceRoute';
-import { SettingsRoute } from './pages/SettingsRoute';
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { RoleSelectionPage } from './pages/auth/RoleSelectionPage';
+import { LandingPage } from './pages/LandingPage';
+import { DashboardRouter } from './pages/dashboard/DashboardRouter';
+import { AccountStatusPage } from './pages/AccountStatusPage';
+import { HomeownerResultsPage } from './pages/dashboard/HomeownerResultsPage';
 
 export function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
-        <Route path="/signup" element={<AuthRoute><SignupPage /></AuthRoute>} />
-        <Route path="/forgot-password" element={<AuthRoute><ForgotPasswordPage /></AuthRoute>} />
-        <Route path="/verify-email" element={<VerifyEmailRoute><VerifyEmailPage /></VerifyEmailRoute>} />
-
-        <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<DashboardRoute />} />
-          <Route path="/invoice" element={<InvoiceRoute />} />
-          <Route path="/settings" element={<SettingsRoute />} />
-        </Route>
-
-        <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-        </Route>
-
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </AuthProvider>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+      <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
+      <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/choose-role" element={<RoleSelectionPage />} />
+      <Route path="/account-status" element={<AccountStatusPage />} />
+      <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<DashboardRouter />} />
+        <Route path="/dashboard/projects/:projectId/results" element={<HomeownerResultsPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

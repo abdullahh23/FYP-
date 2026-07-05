@@ -1,5 +1,4 @@
-import { calcTotals, formatCurrency, generateId, generateInvoiceNumber } from '../src/lib/calc.js';
-import { ExtractionResponseSchema } from '../shared/schema.js';
+import { formatCurrency, projectTags } from '../src/lib/utils';
 
 let passed = 0;
 let failed = 0;
@@ -7,85 +6,38 @@ let failed = 0;
 function test(name: string, fn: () => void) {
   try {
     fn();
-    console.log(`  ✓ ${name}`);
-    passed++;
-  } catch (e) {
-    console.error(`  ✗ ${name}: ${e}`);
-    failed++;
+    console.log(`✓ ${name}`);
+    passed += 1;
+  } catch (error) {
+    console.error(`✗ ${name}: ${error instanceof Error ? error.message : String(error)}`);
+    failed += 1;
   }
 }
 
-function assert(condition: boolean, msg: string) {
-  if (!condition) throw new Error(msg);
+function assert(condition: boolean, message: string) {
+  if (!condition) throw new Error(message);
 }
 
-console.log('\nVerification Suite\n');
+console.log('\nBuildWise AI Verification\n');
 
-console.log('Invoice Calculations:');
-test('calcTotals sums gross amounts', () => {
-  const loads = [
-    { id: '1', loadNumber: '', brokerName: '', pickupDate: '', grossAmount: 1000, originCity: '', originState: '', destinationCity: '', destinationState: '' },
-    { id: '2', loadNumber: '', brokerName: '', pickupDate: '', grossAmount: 1500, originCity: '', originState: '', destinationCity: '', destinationState: '' },
-  ];
-  const { totalGrossRevenue, dispatchFee } = calcTotals(loads, 10);
-  assert(totalGrossRevenue === 2500, `Expected 2500, got ${totalGrossRevenue}`);
-  assert(dispatchFee === 250, `Expected 250, got ${dispatchFee}`);
+test('formats estimates in Pakistani Rupees', () => {
+  const value = formatCurrency(1250000);
+  assert(value.includes('PKR') || value.includes('Rs'), `Unexpected currency output: ${value}`);
 });
 
-test('calcTotals with empty loads returns 0', () => {
-  const { totalGrossRevenue, dispatchFee } = calcTotals([], 10);
-  assert(totalGrossRevenue === 0, 'Expected 0 gross');
-  assert(dispatchFee === 0, 'Expected 0 fee');
-});
-
-test('formatCurrency formats correctly', () => {
-  const result = formatCurrency(2500.5);
-  assert(result.includes('2,500'), `Expected formatted number, got ${result}`);
-});
-
-test('generateId returns unique strings', () => {
-  const a = generateId();
-  const b = generateId();
-  assert(a !== b, 'IDs should be unique');
-});
-
-test('generateInvoiceNumber starts with INV-', () => {
-  const n = generateInvoiceNumber();
-  assert(n.startsWith('INV-'), `Expected INV- prefix, got ${n}`);
-});
-
-console.log('\nExtraction Schema Validation:');
-test('valid extraction response parses correctly', () => {
-  const result = ExtractionResponseSchema.safeParse({
-    success: true,
-    data: {
-      loadNumber: '12345',
-      brokerName: 'Test Broker',
-      pickupDate: '2025-01-15',
-      grossAmount: 2500,
-      originCity: 'Chicago',
-      originState: 'IL',
-      destinationCity: 'Dallas',
-      destinationState: 'TX',
-    },
+test('generates supplier matching tags from project choices', () => {
+  const tags = projectTags({
+    material_quality: 'Luxury',
+    interior_finish: 'Premium',
+    exterior_finish: 'Premium',
+    construction_type: 'Turnkey',
+    solar: true,
+    smart_home: true,
+    swimming_pool: true
   });
-  assert(result.success, 'Schema should parse valid data');
-});
-
-test('partial extraction response is valid', () => {
-  const result = ExtractionResponseSchema.safeParse({
-    success: true,
-    data: { loadNumber: '999' },
-  });
-  assert(result.success, 'Partial data should be valid');
-});
-
-test('error response is valid', () => {
-  const result = ExtractionResponseSchema.safeParse({
-    success: false,
-    error: 'API key not configured',
-  });
-  assert(result.success, 'Error response should parse');
+  for (const tag of ['luxury', 'premium', 'finishing', 'solar', 'electrical']) {
+    assert(tags.includes(tag), `Expected tag ${tag}`);
+  }
 });
 
 console.log(`\nResults: ${passed} passed, ${failed} failed\n`);

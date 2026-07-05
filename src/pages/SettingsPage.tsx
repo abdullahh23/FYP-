@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, CheckCircle } from 'lucide-react';
 import type { CompanySettings, CarrierSettings } from '../types';
+import { InvoiceTemplateSelector } from '../components/InvoiceTemplateSelector';
+import { normalizeInvoiceTemplateId } from '../templates/invoiceRegistry';
 
 interface SettingsPageProps {
   company: CompanySettings;
@@ -47,6 +49,14 @@ export function SettingsPage({ company, carrier, onSave }: SettingsPageProps) {
   const [comp, setComp] = useState<CompanySettings>(company);
   const [carr, setCarr] = useState<CarrierSettings>(carrier);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setComp(company);
+  }, [company]);
+
+  useEffect(() => {
+    setCarr(carrier);
+  }, [carrier]);
 
   const handleSave = async () => {
     await onSave(comp, carr);
@@ -111,6 +121,13 @@ export function SettingsPage({ company, carrier, onSave }: SettingsPageProps) {
         <Field label="Payoneer" value={comp.payoneer} onChange={setC('payoneer')} placeholder="Payoneer account email" />
         <TextArea label="Bank Information" value={comp.bankInformation} onChange={setC('bankInformation')} placeholder="Bank Name, Routing #, Account #" />
       </section>
+
+      <InvoiceTemplateSelector
+        company={comp}
+        carrier={carr}
+        value={normalizeInvoiceTemplateId(comp.invoiceTemplateId)}
+        onChange={invoiceTemplateId => setComp(prev => ({ ...prev, invoiceTemplateId }))}
+      />
 
       <div className="flex justify-end pb-8">
         <button

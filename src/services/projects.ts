@@ -1,0 +1,96 @@
+import { supabase } from '../lib/supabase';
+import { projectTags } from '../lib/utils';
+import type { AiEstimate, ContractorMatch, Project, Promotion, Quotation } from '../types';
+
+export type ProjectFormValues = {
+  title: string;
+  plot_size: number;
+  covered_area: number;
+  floors: number;
+  basement: boolean;
+  city: string;
+  soil_type: string;
+  construction_type: string;
+  material_quality: string;
+  interior_finish: string;
+  exterior_finish: string;
+  parking: boolean;
+  solar: boolean;
+  smart_home: boolean;
+  garden: boolean;
+  swimming_pool: boolean;
+};
+
+export async function listProjects(homeownerId: string) {
+  const { data, error } = await supabase.from('projects').select('*').eq('homeowner_id', homeownerId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Project[];
+}
+
+export async function getProject(projectId: string) {
+  const { data, error } = await supabase.from('projects').select('*').eq('id', projectId).single();
+  if (error) throw error;
+  return data as Project;
+}
+
+export async function createProject(homeownerId: string, values: ProjectFormValues) {
+  const tags = projectTags(values);
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({ ...values, homeowner_id: homeownerId, tags })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Project;
+}
+
+export async function requestEstimate(projectId: string) {
+  const { data, error } = await supabase.functions.invoke('estimate-cost', { body: { projectId } });
+  if (error) throw error;
+  if (!data?.estimate) throw new Error(data?.message ?? 'AI estimation is temporarily unavailable.');
+  return data.estimate as AiEstimate;
+}
+
+export async function saveEstimateFailure(projectId: string, message: string) {
+  await supabase.from('projects').update({ ai_error: message }).eq('id', projectId);
+}
+
+export async function listContractorMatches(projectId: string) {
+  const { data, error } = await supabase.rpc('match_contractors_for_project', { project_id_input: projectId });
+  if (error) throw error;
+  return (data ?? []) as ContractorMatch[];
+}
+
+export async function listRelevantPromotions(projectId: string) {
+  const { data, error } = await supabase.rpc('relevant_promotions_for_project', { project_id_input: projectId });
+  if (error) throw error;
+  return (data ?? []) as Promotion[];
+}
+
+export async function requestQuotation(project: Project, contractorId: string) {
+  const { error } = await supabase.from('quotations').upsert(
+    {
+      project_id: project.id,
+      homeowner_id: project.homeowner_id,
+      contractor_id: contractorId,
+      status: 'requested'
+    },
+    { onConflict: 'project_id,contractor_id' }
+  );
+  if (error) throw error;
+}
+
+export async function listProjectQuotations(projectId: string) {
+  const { data, error } = await supabase
+    .from('quotations')
+    .select('*, contractor:users!quotations_contractor_id_fkey(*, contractor_profiles(*))')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Quotation[];
+}
+
+export async function acceptQuotation(quotation: Quotation) {
+  const { error } = await supabase.rpc('accept_project_quotation', { quotation_id_input: quotation.id });
+  if (error) throw error;
+}

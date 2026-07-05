@@ -1,79 +1,35 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import type { ReactNode } from 'react';
+import type { UserRole } from '../../types';
 
-export function VerifyEmailRoute({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-lane">
-        <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin" />
+export function LoadingScreen() {
+  return (
+    <main className="grid min-h-screen place-items-center bg-background">
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-5 py-4 shadow-panel">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <span className="font-semibold">Loading BuildWise AI</span>
       </div>
-    );
-  }
-  if (!session) return <Navigate to="/login" replace />;
-  if (session.user.email_confirmed_at) return <Navigate to="/dashboard" replace />;
-  return <>{children}</>;
+    </main>
+  );
 }
 
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+export function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: UserRole[] }) {
   const { session, profile, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-lane">
-        <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (session.user && !session.user.email_confirmed_at) {
-    return <Navigate to="/verify-email" replace />;
-  }
-
-  if (profile?.is_disabled) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (loading) return <LoadingScreen />;
+  if (!session) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!profile?.role) return <Navigate to="/choose-role" replace />;
+  if (profile.account_status !== 'active') return <Navigate to="/account-status" replace />;
+  if (roles && !roles.includes(profile.role)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
-export function AdminRoute({ children }: { children: ReactNode }) {
-  const { isAdmin, loading, session } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-lane">
-        <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) return <Navigate to="/login" replace />;
-  if (!isAdmin) return <Navigate to="/dashboard" replace />;
-
-  return <>{children}</>;
-}
-
-export function AuthRoute({ children }: { children: ReactNode }) {
-  const { session, loading, isAdmin } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-lane">
-        <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (session?.user?.email_confirmed_at) {
-    return <Navigate to={isAdmin ? '/admin' : '/dashboard'} replace />;
-  }
-
+export function GuestRoute({ children }: { children: React.ReactNode }) {
+  const { session, profile, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  if (session && !profile?.role) return <Navigate to="/choose-role" replace />;
+  if (session) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }

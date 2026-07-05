@@ -3,12 +3,63 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 190 42% 98%;
+    --foreground: 202 58% 12%;
+    --muted: 187 34% 93%;
+    --muted-foreground: 199 18% 42%;
+    --border: 188 28% 86%;
+    --card: 0 0% 100%;
+    --card-foreground: 202 58% 12%;
+    --primary: 174 72% 30%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 195 78% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 75% 48%;
+    --ring: 174 72% 30%;
+  }
+
+  .dark {
+    --background: 201 50% 8%;
+    --foreground: 187 44% 94%;
+    --muted: 199 36% 16%;
+    --muted-foreground: 190 18% 70%;
+    --border: 196 31% 24%;
+    --card: 199 42% 11%;
+    --card-foreground: 187 44% 94%;
+    --primary: 172 68% 42%;
+    --primary-foreground: 192 58% 8%;
+    --accent: 193 74% 48%;
+    --accent-foreground: 192 58% 8%;
+    --destructive: 0 70% 58%;
+    --ring: 172 68% 42%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply text-ink antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   * {
-    @apply transition-colors duration-150;
+    @apply border-border transition-colors duration-150;
+  }
+
+  input, select, textarea {
+    @apply bg-white text-foreground dark:bg-card;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply border border-white/50 bg-white/80 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-card/80;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
   }
 }
 

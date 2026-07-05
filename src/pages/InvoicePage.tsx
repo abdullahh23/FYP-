@@ -1,5 +1,5 @@
 import { Printer } from 'lucide-react';
-import { InvoiceTemplate } from '../templates/InvoiceTemplate';
+import { InvoiceRenderer } from '../templates/InvoiceRenderer';
 import type { Load, CompanySettings, CarrierSettings } from '../types';
 
 interface InvoicePageProps {
@@ -30,7 +30,8 @@ export function InvoicePage({ loads, company, carrier, invoiceNumber, invoiceDat
       </div>
 
       <div className="bg-white rounded-2xl shadow-panel overflow-x-auto">
-        <InvoiceTemplate
+        <InvoiceRenderer
+          templateId={company.invoiceTemplateId}
           loads={loads}
           company={company}
           carrier={carrier}

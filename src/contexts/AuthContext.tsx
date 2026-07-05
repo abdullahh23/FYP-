@@ -1,155 +1,122 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, type Profile } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import type { Profile, UserRole } from '../types';
 
-interface AuthContextValue {
+type AuthContextValue = {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null; role?: 'user' | 'admin' }>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (input: { name: string; email: string; phone: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: string | null }>;
-  resendVerification: () => Promise<{ error: string | null }>;
+  chooseRole: (role: Exclude<UserRole, 'admin'>, city?: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
-  isAdmin: boolean;
-}
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
+async function fetchProfile(user: User | null) {
+  if (!user) return null;
+  const { data, error } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
+  if (error) throw error;
+  if (data) return data as Profile;
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('users')
+    .insert({
+      id: user.id,
+      email: user.email ?? '',
+      name: user.user_metadata?.name ?? null,
+      phone: user.user_metadata?.phone ?? null
+    })
+    .select()
     .single();
-  if (error || !data) return null;
-  return data as Profile;
+  if (insertError) throw insertError;
+  return inserted as Profile;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = useCallback(async () => {
-    const { data: { session: s } } = await supabase.auth.getSession();
-    if (!s?.user) {
-      setProfile(null);
-      return;
-    }
-    const p = await fetchProfile(s.user.id);
-    if (p?.is_disabled) {
-      await supabase.auth.signOut();
-      setSession(null);
-      setProfile(null);
-      return;
-    }
-    setProfile(p);
-  }, []);
+  const refreshProfile = async () => {
+    const current = await supabase.auth.getUser();
+    setProfile(await fetchProfile(current.data.user));
+  };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      if (s?.user) {
-        fetchProfile(s.user.id).then(p => {
-          if (p?.is_disabled) {
-            supabase.auth.signOut();
-            setProfile(null);
-          } else {
-            setProfile(p);
-          }
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
+    let mounted = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted) return;
+      setSession(data.session);
+      setProfile(await fetchProfile(data.session?.user ?? null));
+      setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (s?.user) {
-        fetchProfile(s.user.id).then(p => {
-          if (p?.is_disabled) {
-            supabase.auth.signOut();
-            setProfile(null);
-          } else {
-            setProfile(p);
-          }
-        });
-      } else {
-        setProfile(null);
-      }
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      fetchProfile(nextSession?.user ?? null)
+        .then(setProfile)
+        .finally(() => setLoading(false));
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    if (data.user) {
-      const p = await fetchProfile(data.user.id);
-      if (p?.is_disabled) {
-        await supabase.auth.signOut();
-        return { error: 'Your account has been disabled. Contact support.' };
-      }
-      setProfile(p);
-      return { error: null, role: p?.role };
-    }
-    return { error: null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-  };
-
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const resendVerification = async () => {
-    if (!session?.user?.email) return { error: 'No email on file' };
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: session.user.email,
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const value: AuthContextValue = {
-    session,
-    user: session?.user ?? null,
-    profile,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
-    resendVerification,
-    refreshProfile,
-    isAdmin: profile?.role === 'admin' && !profile?.is_disabled,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      session,
+      user: session?.user ?? null,
+      profile,
+      loading,
+      async signIn(email, password) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      },
+      async signUp(input) {
+        const { data, error } = await supabase.auth.signUp({
+          email: input.email,
+          password: input.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/choose-role`,
+            data: { name: input.name, phone: input.phone }
+          }
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error('Supabase did not create an Auth user. Please try again.');
+      },
+      async signOut() {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        setProfile(null);
+      },
+      async chooseRole(role, city) {
+        if (!session?.user) throw new Error('Please sign in before choosing a role.');
+        if (profile?.role) throw new Error('Role has already been selected for this account.');
+        const { error } = await supabase
+          .from('users')
+          .update({ role, city: city || profile?.city || null })
+          .eq('id', session.user.id)
+          .is('role', null);
+        if (error) throw error;
+        await refreshProfile();
+      },
+      refreshProfile
+    }),
+    [loading, profile, session]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used inside AuthProvider');
+  return context;
 }
