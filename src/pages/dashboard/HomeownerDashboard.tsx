@@ -15,7 +15,12 @@ import {
   MapPin,
   Ruler,
   Sparkles,
-  WandSparkles
+  WandSparkles,
+  Trash2,
+  Archive,
+  Copy,
+  Pencil,
+  ArchiveRestore
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,12 +32,21 @@ import {
   materialQualityOptions,
   soilOptions
 } from '../../lib/constants';
-import { createProject, listProjects, requestEstimate } from '../../services/projects';
+import {
+  createProject,
+  listProjects,
+  requestEstimate,
+  deleteProject,
+  updateProject,
+  archiveProject,
+  duplicateProject
+} from '../../services/projects';
 import { Button } from '../../components/ui/button';
 import { Field, Input, Select, Toggle } from '../../components/ui/forms';
 import { useToast } from '../../components/ui/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '../../components/ui/card';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, cn } from '../../lib/utils';
+import { DeleteProjectModal } from '../../components/modal/DeleteProjectModal';
 
 const schema = z.object({
   title: z.string().trim().min(3, 'Give your project a descriptive name.'),
@@ -102,6 +116,9 @@ export function HomeownerDashboard() {
   const [phase, setPhase] = useState<'wizard' | 'estimating'>('wizard');
   const [aiProgress, setAiProgress] = useState(8);
   const [showWizard, setShowWizard] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const projects = useQuery({ queryKey: ['projects', user?.id], queryFn: () => listProjects(user!.id), enabled: Boolean(user?.id) });
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults, mode: 'onTouched' });
 
@@ -111,12 +128,17 @@ export function HomeownerDashboard() {
     return () => window.clearInterval(timer);
   }, [phase]);
 
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       setPhase('estimating');
       setAiProgress(12);
       const startedAt = Date.now();
-      const project = await createProject(user!.id, values);
+      let project;
+      if (editingProjectId) {
+        project = await updateProject(editingProjectId, values);
+      } else {
+        project = await createProject(user!.id, values);
+      }
       setAiProgress(48);
       try {
         await requestEstimate(project.id);
@@ -137,11 +159,51 @@ export function HomeownerDashboard() {
     onSuccess: async (project) => {
       await queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       setShowWizard(false);
+      setEditingProjectId(null);
       navigate(`/dashboard/projects/${project.id}/results`);
     },
     onError: (error) => {
       setPhase('wizard');
       toast({ title: 'Could not save project', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
+    }
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      return duplicateProject(projectId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      toast({ title: 'Project duplicated successfully', type: 'success' });
+    },
+    onError: (error) => {
+      toast({ title: 'Failed to duplicate project', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
+    }
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async ({ projectId, archived }: { projectId: string; archived: boolean }) => {
+      return archiveProject(projectId, archived);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      toast({ title: variables.archived ? 'Project archived' : 'Project restored', type: 'success' });
+    },
+    onError: (error) => {
+      toast({ title: 'Action failed', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      await deleteProject(projectId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      toast({ title: 'Project deleted successfully', type: 'success' });
+    },
+    onError: (error) => {
+      toast({ title: 'Failed to delete project', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
     }
   });
 
@@ -162,6 +224,10 @@ export function HomeownerDashboard() {
   const hasProjects = projects.data && projects.data.length > 0;
 
   if (hasProjects && !showWizard) {
+    const filteredProjects = (projects.data ?? []).filter((project) =>
+      showArchived ? project.is_archived : !project.is_archived
+    );
+
     return (
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -169,58 +235,176 @@ export function HomeownerDashboard() {
             <h1 className="text-3xl font-bold">Your Construction Projects</h1>
             <p className="mt-1 text-muted-foreground">View previous estimates, track contractor progress, and manage your projects.</p>
           </div>
-          <Button onClick={() => { setShowWizard(true); setStep(0); form.reset(defaults); }}>
+          <Button onClick={() => { setEditingProjectId(null); setShowWizard(true); setStep(0); form.reset(defaults); }}>
             <WandSparkles className="mr-2 h-4 w-4" /> Create New Estimate
           </Button>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.data.map((project) => {
-            const minEstimate = project.ai_estimate_json?.total_estimate_min;
-            const maxEstimate = project.ai_estimate_json?.total_estimate_max;
-            return (
-              <Card key={project.id} className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                      <Home className="h-5 w-5" />
-                    </span>
-                    <Badge>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <CardTitle className="mt-4 text-xl font-bold line-clamp-1">{project.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {project.city} · {project.plot_size} marla
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>{project.covered_area.toLocaleString()} sq ft · {project.floors} floors</p>
-                    <p>{project.construction_type} · {project.material_quality} Quality</p>
-                    {project.progress_stage && (
-                      <div className="mt-2 pt-2 border-t">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase">Progress</p>
-                        <p className="font-semibold text-primary">{project.progress_stage}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">AI Estimate Range</p>
-                      <p className="font-bold text-primary">
-                        {minEstimate && maxEstimate ? `${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}` : 'Not estimated'}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/projects/${project.id}/results`)}>
-                      View <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="mb-6 flex gap-2 border-b pb-4">
+          <button
+            type="button"
+            className={cn("px-4 py-2 text-sm font-semibold rounded-lg transition-colors", !showArchived ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+            onClick={() => setShowArchived(false)}
+          >
+            Active Projects ({(projects.data ?? []).filter(p => !p.is_archived).length})
+          </button>
+          <button
+            type="button"
+            className={cn("px-4 py-2 text-sm font-semibold rounded-lg transition-colors", showArchived ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+            onClick={() => setShowArchived(true)}
+          >
+            Archived Projects ({(projects.data ?? []).filter(p => p.is_archived).length})
+          </button>
         </div>
+
+        {filteredProjects.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground bg-card shadow-sm">
+            <p className="font-semibold text-lg">No {showArchived ? 'archived' : 'active'} projects found</p>
+            <p className="mt-1 text-sm">Start by creating a new estimate or restoring from archive.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProjects.map((project) => {
+              const minEstimate = project.ai_estimate_json?.total_estimate_min;
+              const maxEstimate = project.ai_estimate_json?.total_estimate_max;
+              return (
+                <Card key={project.id} className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                        <Home className="h-5 w-5" />
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge>
+                          {project.status}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingProjectId(project.id);
+                            form.reset({
+                              title: project.title,
+                              plot_size: project.plot_size,
+                              covered_area: project.covered_area,
+                              floors: project.floors,
+                              basement: project.basement,
+                              city: project.city,
+                              soil_type: project.soil_type,
+                              construction_type: project.construction_type,
+                              material_quality: project.material_quality,
+                              interior_finish: project.interior_finish,
+                              exterior_finish: project.exterior_finish,
+                              parking: project.parking,
+                              solar: project.solar,
+                              smart_home: project.smart_home,
+                              garden: project.garden,
+                              swimming_pool: project.swimming_pool
+                            });
+                            setStep(0);
+                            setShowWizard(true);
+                          }}
+                          aria-label="Edit project"
+                          title="Edit project"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            duplicateMutation.mutate(project.id);
+                          }}
+                          disabled={duplicateMutation.isPending}
+                          aria-label="Duplicate project"
+                          title="Duplicate project"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            archiveMutation.mutate({ projectId: project.id, archived: !project.is_archived });
+                          }}
+                          disabled={archiveMutation.isPending}
+                          aria-label="Archive project"
+                          title={project.is_archived ? "Restore project" : "Archive project"}
+                        >
+                          {project.is_archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDeleteTarget({ id: project.id, title: project.title });
+                          }}
+                          aria-label="Delete project"
+                          title="Delete project"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardTitle className="mt-4 text-xl font-bold line-clamp-1">{project.title}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {project.city} · {project.plot_size} marla
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>{project.covered_area.toLocaleString()} sq ft · {project.floors} floors</p>
+                      <p>{project.construction_type} · {project.material_quality} Quality</p>
+                      {project.progress_stage && (
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase">Progress</p>
+                          <p className="font-semibold text-primary">{project.progress_stage}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">AI Estimate Range</p>
+                        <p className="font-bold text-primary">
+                          {minEstimate && maxEstimate ? `${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}` : 'Not estimated'}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/projects/${project.id}/results`)}>
+                        View <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        <DeleteProjectModal
+          open={Boolean(deleteTarget)}
+          projectTitle={deleteTarget?.title ?? ''}
+          loading={deleteMutation.isPending}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => {
+            if (deleteTarget) {
+              deleteMutation.mutate(deleteTarget.id, {
+                onSuccess: () => setDeleteTarget(null)
+              });
+            }
+          }}
+        />
       </div>
     );
   }
@@ -263,7 +447,7 @@ export function HomeownerDashboard() {
         <motion.div className="h-full rounded-full bg-primary" animate={{ width: `${progress}%` }} transition={{ duration: 0.35, ease: 'easeOut' }} />
       </div>
 
-      <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}>
+      <form onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}>
         <div className="min-h-[500px] overflow-hidden rounded-lg border bg-card shadow-panel sm:min-h-[520px]">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.section
@@ -294,7 +478,7 @@ export function HomeownerDashboard() {
                     Next <ArrowRight className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" size="lg" loading={createMutation.isPending}>
+                  <Button type="submit" size="lg" loading={saveMutation.isPending}>
                     <WandSparkles className="h-4 w-4" /> Generate estimate
                   </Button>
                 )}

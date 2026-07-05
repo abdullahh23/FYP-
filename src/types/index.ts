@@ -20,6 +20,20 @@ export type AiEstimate = {
   total_estimate_min: number;
   total_estimate_max: number;
   explanation: string;
+  labour_cost?: number;
+  timeline?: string;
+  confidence?: number;
+  suggestions?: string[];
+  material_cost?: number;
+  foundation_cost?: number;
+  roofing_cost?: number;
+  paint_cost?: number;
+  tiles_cost?: number;
+  doors_windows_cost?: number;
+  miscellaneous_cost?: number;
+  risk_factors?: string[];
+  material_quality_recommendation?: string;
+  pricing_basis?: string;
 };
 
 export type Profile = {
@@ -110,6 +124,7 @@ export type Project = {
   swimming_pool: boolean;
   tags: string[];
   status: ProjectStatus;
+  is_archived: boolean;
   ai_estimate_json: AiEstimate | null;
   ai_error: string | null;
   ai_estimated_at: string | null;

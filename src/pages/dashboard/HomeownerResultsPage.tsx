@@ -225,11 +225,20 @@ function EstimateAnalytics({ project }: { project: Project }) {
   const estimate = project.ai_estimate_json!;
   const costs = [
     { label: 'Land preparation', value: estimate.land_preparation_cost, color: 'bg-cyan-500' },
+    { label: 'Foundation', value: estimate.foundation_cost ?? 0, color: 'bg-teal-500' },
     { label: 'Structure', value: estimate.structure_cost, color: 'bg-primary' },
+    { label: 'Roofing', value: estimate.roofing_cost ?? 0, color: 'bg-indigo-500' },
     { label: 'Electrical', value: estimate.electrical_cost, color: 'bg-amber-500' },
     { label: 'Plumbing', value: estimate.plumbing_cost, color: 'bg-blue-500' },
-    { label: 'Finishing', value: estimate.finishing_cost, color: 'bg-emerald-500' }
-  ];
+    { label: 'Paint', value: estimate.paint_cost ?? 0, color: 'bg-rose-500' },
+    { label: 'Tiles', value: estimate.tiles_cost ?? 0, color: 'bg-orange-500' },
+    { label: 'Doors & Windows', value: estimate.doors_windows_cost ?? 0, color: 'bg-violet-500' },
+    { label: 'Finishing', value: estimate.finishing_cost, color: 'bg-emerald-500' },
+    { label: 'Labour cost', value: estimate.labour_cost ?? 0, color: 'bg-purple-500' },
+    { label: 'Material cost', value: estimate.material_cost ?? 0, color: 'bg-sky-500' },
+    { label: 'Miscellaneous', value: estimate.miscellaneous_cost ?? 0, color: 'bg-slate-500' },
+  ].filter(cost => cost.value > 0);
+
   const max = Math.max(...costs.map((cost) => cost.value));
   const midpoint = (estimate.total_estimate_min + estimate.total_estimate_max) / 2;
   const spread = estimate.total_estimate_max - estimate.total_estimate_min;
@@ -259,7 +268,35 @@ function EstimateAnalytics({ project }: { project: Project }) {
         <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
           <p className="flex items-center gap-2 text-sm font-bold"><Bot className="h-4 w-4 text-primary" /> AI summary</p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">{estimate.explanation}</p>
+          {estimate.pricing_basis && (
+            <p className="mt-4 border-t pt-3 text-xs italic text-muted-foreground">{estimate.pricing_basis}</p>
+          )}
         </div>
+        {estimate.timeline && (
+          <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Estimated Timeline</p>
+            <p className="mt-3 text-lg font-bold">{estimate.timeline}</p>
+            {estimate.confidence !== undefined && (
+              <p className="mt-2 text-xs text-muted-foreground">AI Estimation Confidence: {estimate.confidence}%</p>
+            )}
+          </div>
+        )}
+        {estimate.risk_factors && estimate.risk_factors.length > 0 && (
+          <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Risk Factors Identified</p>
+            <ul className="mt-3 list-disc pl-5 text-sm space-y-2 text-muted-foreground">
+              {estimate.risk_factors.map((risk, i) => <li key={i}>{risk}</li>)}
+            </ul>
+          </div>
+        )}
+        {estimate.suggestions && estimate.suggestions.length > 0 && (
+          <div className="rounded-lg border bg-card p-5 shadow-panel sm:p-6">
+            <p className="flex items-center gap-2 text-sm font-bold text-primary">Suggestions & Tips</p>
+            <ul className="mt-3 list-disc pl-5 text-sm space-y-2 text-muted-foreground">
+              {estimate.suggestions.map((tip, i) => <li key={i}>{tip}</li>)}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="rounded-lg border bg-card p-5 shadow-panel lg:col-span-2 sm:p-6">

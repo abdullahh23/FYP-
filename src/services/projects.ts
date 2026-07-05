@@ -108,3 +108,47 @@ export async function acceptQuotation(quotation: Quotation) {
   const { error } = await supabase.rpc('accept_project_quotation', { quotation_id_input: quotation.id });
   if (error) throw error;
 }
+
+export async function deleteProject(projectId: string) {
+  const { error } = await supabase.from('projects').delete().eq('id', projectId);
+  if (error) throw error;
+}
+
+export async function updateProject(projectId: string, values: Partial<ProjectFormValues>) {
+  const { data, error } = await supabase
+    .from('projects')
+    .update(values)
+    .eq('id', projectId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Project;
+}
+
+export async function archiveProject(projectId: string, isArchived = true) {
+  const { error } = await supabase.from('projects').update({ is_archived: isArchived }).eq('id', projectId);
+  if (error) throw error;
+}
+
+export async function duplicateProject(projectId: string) {
+  const project = await getProject(projectId);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id, created_at, updated_at, ai_estimate_json, ai_error, ai_estimated_at, accepted_quotation_id, ...rest } = project;
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      ...rest,
+      title: `${project.title} (Copy)`,
+      status: 'Planning',
+      is_archived: false
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  try {
+    await requestEstimate(data.id);
+  } catch (e) {
+    console.error("AI estimation error during duplication:", e);
+  }
+  return data as Project;
+}

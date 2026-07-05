@@ -4,6 +4,7 @@ import { MessageSquareText } from 'lucide-react';
 import { ContractorWorkspace } from './ContractorWorkspace';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { ChatPanel } from '../../components/chat/ChatPanel';
+import { RequireRole } from '../../lib/requireRole';
 import { useAuth } from '../../contexts/AuthContext';
 import { listConversationsForUser } from '../../services/chat';
 import { cn } from '../../lib/utils';
@@ -32,7 +33,7 @@ export function ContractorMessagesPage() {
     ? 'Reply to contractors and suppliers, share images, PDFs, and documents, and track seen status in real time.'
     : 'Reply to homeowners, share images, PDFs, and documents, and track seen status in real time.';
 
-  return (
+  return (<RequireRole allowedRoles={['contractor']}>
     <ContractorWorkspace>
       <div className="grid gap-6">
         <div>
@@ -72,5 +73,6 @@ export function ContractorMessagesPage() {
         </div>
       </div>
     </ContractorWorkspace>
+    </RequireRole>
   );
 }

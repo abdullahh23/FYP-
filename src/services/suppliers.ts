@@ -23,6 +23,16 @@ export async function createProduct(input: Omit<SupplierProduct, 'id' | 'created
   if (error) throw error;
 }
 
+export async function updateProduct(productId: string, values: Partial<Omit<SupplierProduct, 'id' | 'created_at' | 'supplier_id'>>) {
+  const { error } = await supabase.from('products').update(values).eq('id', productId);
+  if (error) throw error;
+}
+
+export async function deleteProduct(productId: string) {
+  const { error } = await supabase.from('products').delete().eq('id', productId);
+  if (error) throw error;
+}
+
 export async function listPromotions(supplierId: string) {
   const { data, error } = await supabase
     .from('supplier_promotions')
