@@ -232,6 +232,8 @@ export type MaterialQuoteRequest = {
   delivery_time: string | null;
   discount: number;
   notes: string | null;
+  created_at: string;
+  updated_at?: string;
   supplier?: SupplierProfile;
   items?: Array<{ product_id: string; quantity: number; quoted_unit_price: number | null; products?: SupplierProduct }>;
 };

@@ -425,7 +425,7 @@ export function ContractorDashboard() {
                   </div>
                 </div>
               )}
-              <ChatPanel projectId={fullDetail.projects?.id} peerId={fullDetail.homeowner?.id!} quotationId={fullDetail.id} peerName={fullDetail.homeowner?.name ?? 'Homeowner'} />
+              <ChatPanel projectId={fullDetail.projects?.id ?? ''} peerId={fullDetail.homeowner?.id!} quotationId={fullDetail.id} peerName={fullDetail.homeowner?.name ?? 'Homeowner'} />
             </CardContent>
           </Card>
         </div>

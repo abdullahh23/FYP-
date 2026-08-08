@@ -405,7 +405,7 @@ export function HomeownerDashboard() {
             <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {conversations.data.slice(0, 6).map((thread) => {
                 const isContractor = Boolean(thread.contractor_id);
-                const peerName = isContractor ? (thread.contractor?.name ?? 'Contractor') : (thread.supplier?.company_name ?? 'Supplier');
+                const peerName = isContractor ? (thread.contractor?.name ?? 'Contractor') : (thread.supplier?.name ?? 'Supplier');
                 const targetUrl = isContractor
                   ? `/dashboard/projects/${thread.project_id}/results?chatContractorId=${thread.contractor_id}&name=${encodeURIComponent(peerName)}&quotationId=${thread.quotation_id || ''}`
                   : `/dashboard/projects/${thread.project_id}/results?chatSupplierId=${thread.supplier_id}&name=${encodeURIComponent(peerName)}`;

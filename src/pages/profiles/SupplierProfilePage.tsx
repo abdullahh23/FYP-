@@ -20,7 +20,7 @@ export function SupplierProfilePage() {
       if (userError) throw userError;
 
       const { data: products, error: productsError } = await supabase
-        .from('supplier_products')
+        .from('products')
         .select('*')
         .eq('supplier_id', id)
         .eq('is_active', true);
@@ -111,7 +111,7 @@ export function SupplierProfilePage() {
                   )}
                   <h3 className="font-bold text-base leading-tight">{product.name}</h3>
                   <div className="mt-1 flex flex-wrap gap-2">
-                    <Badge variant="secondary">{product.category}</Badge>
+                    <Badge>{product.category}</Badge>
                     {product.discount > 0 && <Badge tone="success">-{product.discount}%</Badge>}
                   </div>
                   <p className="mt-4 text-xl font-bold text-primary">
