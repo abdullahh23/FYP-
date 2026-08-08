@@ -131,16 +131,6 @@ export function ChatPanel({ projectId, peerId, quotationId, peerName }: { projec
         <div className="relative flex gap-2">
           <label title="Share image" className="focus-ring grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-lg border bg-card"><ImagePlus className="h-4 w-4" /><input type="file" accept="image/*" className="hidden" onChange={(event) => submitImage(event.target.files?.[0])} /></label>
           <label title="Share file" className="focus-ring grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-lg border bg-card"><Paperclip className="h-4 w-4" /><input type="file" accept=".pdf,.docx,image/*" className="hidden" onChange={(event) => submitFile(event.target.files?.[0])} /></label>
-          <Button type="button" variant="secondary" size="icon" onClick={() => setEmojiOpen((value) => !value)} aria-label="Add emoji"><SmilePlus className="h-4 w-4" /></Button>
-          {emojiOpen && (
-            <div className="absolute bottom-12 left-20 z-10 flex gap-1 rounded-lg border bg-card p-2 shadow-panel">
-              {['👍', '🙏', '😊', '✅', '🏗️', '📌'].map((emoji) => (
-                <button key={emoji} type="button" className="grid h-8 w-8 place-items-center rounded-md hover:bg-muted" onClick={() => { handleTyping(`${body}${emoji}`); setEmojiOpen(false); }}>
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
           <Input value={body} onChange={(event) => handleTyping(event.target.value)} placeholder="Write a message" onKeyDown={(event) => event.key === 'Enter' && submitText()} />
           <Button type="button" size="icon" onClick={submitText} loading={sending} aria-label="Send message"><Send className="h-4 w-4" /></Button>
         </div>
