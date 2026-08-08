@@ -235,7 +235,7 @@ export function HomeownerResultsPage() {
               {item.product.image_urls[0] && <img src={item.product.image_urls[0]} alt={item.product.name} className="mb-4 aspect-[16/10] w-full rounded-lg object-cover" />}
               <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-primary">{item.product.brand}</p><Link to={`/marketplace/products/${item.product.id}`} className="font-bold hover:text-primary">{item.product.name}</Link></div>{item.product.discount > 0 && <Badge tone="success">-{item.product.discount}%</Badge>}</div>
               <p className="mt-2 text-lg font-bold">{formatCurrency(finalPrice)} <span className="text-xs font-normal text-muted-foreground">/{item.product.unit}</span></p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.supplier.company_name} · {item.product.delivery_time ?? 'Delivery on request'}</p>
+              <p className="mt-1 text-xs text-muted-foreground"><Link to={`/suppliers/${item.product.supplier_id}`} className="font-semibold hover:text-primary hover:underline">{item.supplier.company_name}</Link> · {item.product.delivery_time ?? 'Delivery on request'}</p>
               <div className="mt-4 flex gap-2"><Button size="sm" variant={selected ? 'primary' : 'secondary'} onClick={() => setSelectedProducts((current) => selected ? current.filter((id) => id !== item.product.id) : [...current, item.product.id])}>{selected ? 'Selected' : 'Compare & quote'}</Button><Button size="sm" variant="ghost" onClick={() => setSupplierChat({ supplierId: item.product.supplier_id, name: item.supplier.company_name })}><MessageSquare className="h-4 w-4" /> Chat</Button></div>
             </div>;
           }) : <div className="sm:col-span-2 xl:col-span-3"><InlineEmpty>No products match this project yet. Recommendations appear as suppliers publish tagged products.</InlineEmpty></div>}
@@ -364,8 +364,11 @@ function ContractorRow({ contractor, onRequest }: { contractor: ContractorMatch;
     <div className="rounded-lg border p-4 transition-shadow hover:shadow-panel">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 font-bold text-primary">{contractor.name.slice(0, 2).toUpperCase()}</span>
-          <div><p className="font-bold">{contractor.name}</p><p className="mt-1 text-sm text-muted-foreground">{contractor.specialization} · {contractor.city ?? 'Flexible location'}</p></div>
+          <Link to={`/contractors/${contractor.user_id}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 font-bold text-primary hover:bg-primary/20 transition-colors">{contractor.name.slice(0, 2).toUpperCase()}</Link>
+          <div>
+            <Link to={`/contractors/${contractor.user_id}`} className="font-bold hover:text-primary transition-colors hover:underline">{contractor.name}</Link>
+            <p className="mt-1 text-sm text-muted-foreground">{contractor.specialization} · {contractor.city ?? 'Flexible location'}</p>
+          </div>
         </div>
         <Button size="sm" onClick={onRequest}><Send className="h-4 w-4" /> Request quote</Button>
       </div>

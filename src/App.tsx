@@ -14,6 +14,8 @@ import { ProductDetailsPage } from './pages/marketplace/ProductDetailsPage';
 import { ContractorAvailableProjectsPage } from './pages/dashboard/ContractorAvailableProjectsPage';
 import { ContractorMessagesPage } from './pages/dashboard/ContractorMessagesPage';
 import { ContractorNotificationsPage } from './pages/dashboard/ContractorNotificationsPage';
+import { ContractorProfilePage } from './pages/profiles/ContractorProfilePage';
+import { SupplierProfilePage } from './pages/profiles/SupplierProfilePage';
 
 export function App() {
   return (
@@ -35,6 +37,8 @@ export function App() {
         <Route path="/dashboard/profile" element={<DashboardRouter />} />
         <Route path="/dashboard/settings" element={<DashboardRouter />} />
         <Route path="/dashboard/projects/:projectId/results" element={<ProtectedRoute roles={['homeowner']}><HomeownerResultsPage /></ProtectedRoute>} />
+        <Route path="/contractors/:id" element={<ContractorProfilePage />} />
+        <Route path="/suppliers/:id" element={<SupplierProfilePage />} />
         <Route path="/marketplace/products/:productId" element={<ProductDetailsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
