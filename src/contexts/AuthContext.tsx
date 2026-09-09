@@ -50,17 +50,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setProfile(await fetchProfile(data.session?.user ?? null));
-      setLoading(false);
-    });
+
+    // Race getSession against a 7s timeout so the app never hangs if Supabase is unreachable
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 7000));
+
+    Promise.race([
+      supabase.auth.getSession().then(({ data }) => data.session),
+      timeout
+    ])
+      .then(async (session) => {
+        if (!mounted) return;
+        setSession(session);
+        try {
+          setProfile(await fetchProfile(session?.user ?? null));
+        } catch {
+          setProfile(null);
+        }
+      })
+      .catch(() => {
+        if (mounted) setProfile(null);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       fetchProfile(nextSession?.user ?? null)
         .then(setProfile)
+        .catch(() => setProfile(null))
         .finally(() => setLoading(false));
     });
 
