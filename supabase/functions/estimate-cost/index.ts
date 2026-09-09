@@ -172,7 +172,14 @@ Deno.serve(async (req) => {
   const prompt = constructPrompt(project);
   let lastError = 'AI response could not be parsed.';
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  const candidateModels = [
+    'meta/llama-3.2-11b-vision-instruct',
+    'deepseek-ai/deepseek-v4-flash-0731',
+    'meta/llama-3.2-90b-vision-instruct'
+  ];
+
+  for (let attempt = 1; attempt <= candidateModels.length; attempt++) {
+    const selectedModel = candidateModels[attempt - 1];
     try {
       const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
         method: 'POST',
@@ -181,8 +188,8 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'meta/llama-3.3-70b-instruct',
-          temperature: attempt === 1 ? 0.1 : attempt === 2 ? 0 : 0.2,
+          model: selectedModel,
+          temperature: 0.1,
           max_tokens: 1200,
           messages: [
             { role: 'system', content: 'You are a construction cost estimation AI. You return strict JSON only. No markdown. No explanation outside JSON.' },
