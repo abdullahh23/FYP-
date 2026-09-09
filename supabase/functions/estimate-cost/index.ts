@@ -46,6 +46,8 @@ function constructPrompt(project: Record<string, unknown>) {
     : quality.includes('economy') ? 4200 : 5400;
   const targetTotal = coveredArea * ratePerSqft;
 
+  const tagsList = Array.isArray(project.tags) ? project.tags.join(', ') : 'Standard layout';
+
   return `You are BuildWise AI, Pakistan's leading senior quantity surveyor and construction cost estimation expert.
 Generate an authentic, highly accurate, itemized construction cost estimate in Pakistani Rupees (PKR) for this project.
 
@@ -58,10 +60,12 @@ PROJECT DETAILS:
 - Construction Type: ${project.construction_type || 'Turnkey'}
 - Material Quality: ${project.material_quality || 'Standard'}
 - Soil Type: ${project.soil_type || 'Normal'}
+- Room Layout & Spaces: ${tagsList}
 - Features: Parking=${project.parking}, Solar=${project.solar}, SmartHome=${project.smart_home}, Garden=${project.garden}, Pool=${project.swimming_pool}
 
 PAKISTANI 2025-2026 CONSTRUCTION BENCHMARKS:
-Target Estimated Total for this size and quality: ~PKR ${targetTotal.toLocaleString()}
+Target Estimated Total for this size, layout and quality: ~PKR ${targetTotal.toLocaleString()}
+Take into account the number of bathrooms (sanitary/tiles per bath), kitchens on each floor (cabinets/granite/plumbing), attached baths, and living spaces specified.
 Category Guidelines (all values in realistic full PKR amounts, NOT placeholder single digits):
 1. Structure (Grey structure - cement, steel rebar, bricks, sand, crush): ~38% - 44% of total (~PKR ${Math.round(targetTotal * 0.40).toLocaleString()})
 2. Foundation & Excavation: ~8% - 12% of total (~PKR ${Math.round(targetTotal * 0.10).toLocaleString()})

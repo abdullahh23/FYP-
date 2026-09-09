@@ -19,7 +19,37 @@ export type ProjectFormValues = {
   smart_home: boolean;
   garden: boolean;
   swimming_pool: boolean;
+  // Room & Layout specifications
+  bedrooms?: number;
+  bathrooms?: number;
+  attached_baths?: boolean;
+  kitchens?: number;
+  dirty_kitchen?: boolean;
+  drawing_dining?: boolean;
+  tv_lounge?: boolean;
+  car_porch?: string;
+  powder_room?: boolean;
+  servant_quarter?: boolean;
+  mumty_rooftop?: boolean;
 };
+
+function sanitizeProjectPayload(values: Partial<ProjectFormValues>) {
+  const {
+    bedrooms: _bedrooms,
+    bathrooms: _bathrooms,
+    attached_baths: _attached_baths,
+    kitchens: _kitchens,
+    dirty_kitchen: _dirty_kitchen,
+    drawing_dining: _drawing_dining,
+    tv_lounge: _tv_lounge,
+    car_porch: _car_porch,
+    powder_room: _powder_room,
+    servant_quarter: _servant_quarter,
+    mumty_rooftop: _mumty_rooftop,
+    ...dbFields
+  } = values;
+  return dbFields;
+}
 
 export async function listProjects(homeownerId: string) {
   const { data, error } = await supabase.from('projects').select('*').eq('homeowner_id', homeownerId).order('created_at', { ascending: false });
@@ -35,9 +65,10 @@ export async function getProject(projectId: string) {
 
 export async function createProject(homeownerId: string, values: ProjectFormValues) {
   const tags = projectTags(values);
+  const dbFields = sanitizeProjectPayload(values);
   const { data, error } = await supabase
     .from('projects')
-    .insert({ ...values, homeowner_id: homeownerId, tags })
+    .insert({ ...dbFields, homeowner_id: homeownerId, tags })
     .select()
     .single();
   if (error) throw error;
@@ -117,9 +148,11 @@ export async function deleteProject(projectId: string) {
 }
 
 export async function updateProject(projectId: string, values: Partial<ProjectFormValues>) {
+  const dbFields = sanitizeProjectPayload(values);
+  const tags = projectTags(values as any);
   const { data, error } = await supabase
     .from('projects')
-    .update(values)
+    .update({ ...dbFields, tags })
     .eq('id', projectId)
     .select()
     .single();

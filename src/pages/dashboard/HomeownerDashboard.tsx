@@ -20,7 +20,13 @@ import {
   Archive,
   Copy,
   Pencil,
-  ArchiveRestore
+  ArchiveRestore,
+  Bed,
+  Bath,
+  Utensils,
+  Tv,
+  Car,
+  Armchair
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -49,7 +55,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from
 import { formatCurrency, cn } from '../../lib/utils';
 import { DeleteProjectModal } from '../../components/modal/DeleteProjectModal';
 
-
 const schema = z.object({
   title: z.string().trim().min(3, 'Give your project a descriptive name.'),
   plot_size: z.coerce.number().positive('Enter a valid plot size.'),
@@ -66,7 +71,19 @@ const schema = z.object({
   solar: z.boolean(),
   smart_home: z.boolean(),
   garden: z.boolean(),
-  swimming_pool: z.boolean()
+  swimming_pool: z.boolean(),
+  // Room & Layout specifications
+  bedrooms: z.coerce.number().int().min(1, 'At least 1 bedroom').max(20),
+  bathrooms: z.coerce.number().int().min(1, 'At least 1 bathroom').max(20),
+  attached_baths: z.boolean(),
+  powder_room: z.boolean(),
+  kitchens: z.coerce.number().int().min(1, 'At least 1 kitchen').max(10),
+  dirty_kitchen: z.boolean(),
+  drawing_dining: z.boolean(),
+  tv_lounge: z.boolean(),
+  car_porch: z.string().min(1),
+  servant_quarter: z.boolean(),
+  mumty_rooftop: z.boolean()
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -87,12 +104,25 @@ const defaults: FormValues = {
   solar: false,
   smart_home: false,
   garden: true,
-  swimming_pool: false
+  swimming_pool: false,
+  // Layout defaults
+  bedrooms: 4,
+  bathrooms: 4,
+  attached_baths: true,
+  powder_room: true,
+  kitchens: 2,
+  dirty_kitchen: false,
+  drawing_dining: true,
+  tv_lounge: true,
+  car_porch: '2 Cars',
+  servant_quarter: false,
+  mumty_rooftop: true
 };
 
 const steps: Array<{ label: string; eyebrow: string; title: string; description: string; fields: FieldPath<FormValues>[] }> = [
   { label: 'Project', eyebrow: 'Let\'s begin', title: 'Where are you planning to build?', description: 'Start with a name and location for your project.', fields: ['title', 'city'] },
   { label: 'Space', eyebrow: 'Size and scale', title: 'How much space are you working with?', description: 'These dimensions have the largest impact on your estimate.', fields: ['plot_size', 'covered_area', 'floors'] },
+  { label: 'Layout', eyebrow: 'Rooms & Floor Plan', title: 'How many rooms and spaces do you need?', description: 'Specify bedrooms, attached bathrooms, kitchens per floor, and key spaces.', fields: ['bedrooms', 'bathrooms', 'kitchens', 'car_porch'] },
   { label: 'Site', eyebrow: 'Ground conditions', title: 'Tell us about the building site', description: 'Site conditions help estimate foundation and preparation costs.', fields: ['soil_type', 'basement'] },
   { label: 'Build', eyebrow: 'Construction plan', title: 'What level of construction do you need?', description: 'Choose the scope and material quality that fit your goals.', fields: ['construction_type', 'material_quality'] },
   { label: 'Finish', eyebrow: 'Look and feel', title: 'Choose your finishing standards', description: 'Select the finish level for the spaces inside and out.', fields: ['interior_finish', 'exterior_finish'] },
@@ -563,7 +593,51 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
     );
   }
 
+  // Step 2: Rooms & Layout
   if (step === 2) {
+    const carPorchOptions = ['1 Car', '2 Cars', '3+ Cars'] as const;
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Bedrooms" error={errors.bedrooms?.message}>
+            <Input type="number" min="1" max="20" {...form.register('bedrooms', { valueAsNumber: true })} />
+          </Field>
+          <Field label="Washrooms / Baths" error={errors.bathrooms?.message}>
+            <Input type="number" min="1" max="20" {...form.register('bathrooms', { valueAsNumber: true })} />
+          </Field>
+          <Field label="Kitchens" error={errors.kitchens?.message}>
+            <Input type="number" min="1" max="10" {...form.register('kitchens', { valueAsNumber: true })} />
+          </Field>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Attached Bathrooms & Kitchen Layout</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Toggle label="Attached baths with all bedrooms" checked={form.watch('attached_baths')} onChange={(v) => form.setValue('attached_baths', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="Guest powder room (Ground floor)" checked={form.watch('powder_room')} onChange={(v) => form.setValue('powder_room', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="Kitchen on both/each floor" checked={form.watch('kitchens') >= 2} onChange={(v) => form.setValue('kitchens', v ? Math.max(2, form.watch('kitchens')) : 1, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="Separate dirty/spice kitchen" checked={form.watch('dirty_kitchen')} onChange={(v) => form.setValue('dirty_kitchen', v, { shouldValidate: true, shouldDirty: true })} />
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Living Spaces & Utilities</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Toggle label="Drawing & Dining Room" checked={form.watch('drawing_dining')} onChange={(v) => form.setValue('drawing_dining', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="TV Lounge on each floor" checked={form.watch('tv_lounge')} onChange={(v) => form.setValue('tv_lounge', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="Mumty & Rooftop access" checked={form.watch('mumty_rooftop')} onChange={(v) => form.setValue('mumty_rooftop', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle label="Servant quarter with attached bath" checked={form.watch('servant_quarter')} onChange={(v) => form.setValue('servant_quarter', v, { shouldValidate: true, shouldDirty: true })} />
+          </div>
+        </div>
+
+        <div>
+          <ChoiceGrid label="Car Porch Capacity" value={form.watch('car_porch')} options={carPorchOptions} onChange={(v) => form.setValue('car_porch', v, { shouldValidate: true })} />
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 3) {
     return (
       <div className="grid gap-6 sm:grid-cols-2">
         <Field label="Soil type" error={errors.soil_type?.message}>
@@ -577,7 +651,7 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
     );
   }
 
-  if (step === 3) {
+  if (step === 4) {
     return (
       <div className="grid gap-6 sm:grid-cols-2">
         <ChoiceGrid label="Construction type" value={form.watch('construction_type')} options={constructionOptions} onChange={(value) => form.setValue('construction_type', value, { shouldValidate: true })} />
@@ -586,7 +660,7 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
     );
   }
 
-  if (step === 4) {
+  if (step === 5) {
     return (
       <div className="grid gap-6 sm:grid-cols-2">
         <ChoiceGrid label="Interior finish" value={form.watch('interior_finish')} options={interiorFinishOptions} onChange={(value) => form.setValue('interior_finish', value, { shouldValidate: true })} />
@@ -595,7 +669,7 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
     );
   }
 
-  if (step === 5) {
+  if (step === 6) {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {featureFields.map(([field, label]) => (
@@ -607,13 +681,25 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
 
   const values = form.getValues();
   const selectedFeatures = featureFields.filter(([field]) => values[field]).map(([, label]) => label);
+  const layoutSummary = `${values.bedrooms} Bed · ${values.bathrooms} Bath (${values.attached_baths ? 'Attached' : 'Shared'}) · ${values.kitchens} Kitchen${values.kitchens > 1 ? 's' : ''} · ${values.car_porch}`;
+  const spaceExtras = [
+    values.drawing_dining && 'Drawing/Dining',
+    values.tv_lounge && 'TV Lounge',
+    values.powder_room && 'Powder Room',
+    values.dirty_kitchen && 'Dirty Kitchen',
+    values.servant_quarter && 'Servant Quarter',
+    values.mumty_rooftop && 'Mumty'
+  ].filter(Boolean).join(', ');
+
   const reviewItems = [
     { icon: MapPin, label: 'Location', value: `${values.city} · ${values.soil_type} soil` },
     { icon: Ruler, label: 'Space', value: `${values.plot_size} marla · ${values.covered_area.toLocaleString()} sq ft` },
+    { icon: Bed, label: 'Room Layout', value: layoutSummary },
+    { icon: Armchair, label: 'Living Spaces', value: spaceExtras || 'Standard layout' },
     { icon: Layers3, label: 'Structure', value: `${values.floors} floor${values.floors === 1 ? '' : 's'} · ${values.basement ? 'Basement' : 'No basement'}` },
     { icon: Building2, label: 'Build', value: `${values.construction_type} · ${values.material_quality}` },
     { icon: Home, label: 'Finishes', value: `${values.interior_finish} interior · ${values.exterior_finish} exterior` },
-    { icon: Sparkles, label: 'Features', value: selectedFeatures.length ? selectedFeatures.join(', ') : 'No additional features' }
+    { icon: Sparkles, label: 'Special Features', value: selectedFeatures.length ? selectedFeatures.join(', ') : 'No additional features' }
   ];
 
   return (

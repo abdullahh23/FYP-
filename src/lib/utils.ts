@@ -22,22 +22,25 @@ export function initials(name?: string | null) {
     .join('');
 }
 
-export function projectTags(project: {
-  material_quality: string;
-  interior_finish: string;
-  exterior_finish: string;
-  construction_type: string;
-  solar: boolean;
-  smart_home: boolean;
-  swimming_pool: boolean;
-}) {
+export function projectTags(project: Record<string, any>) {
   const tags = new Set<string>();
-  tags.add(project.material_quality.toLowerCase());
-  tags.add(project.interior_finish.toLowerCase());
-  tags.add(project.exterior_finish.toLowerCase());
-  tags.add(project.construction_type.includes('Grey') ? 'cement' : 'finishing');
+  if (project.material_quality) tags.add(String(project.material_quality).toLowerCase());
+  if (project.interior_finish) tags.add(String(project.interior_finish).toLowerCase());
+  if (project.exterior_finish) tags.add(String(project.exterior_finish).toLowerCase());
+  if (project.construction_type) tags.add(String(project.construction_type).includes('Grey') ? 'cement' : 'finishing');
   if (project.solar) tags.add('solar');
   if (project.smart_home) tags.add('electrical');
   if (project.swimming_pool) tags.add('luxury');
+  if (project.bedrooms) tags.add(`${project.bedrooms} Bedrooms`);
+  if (project.bathrooms) tags.add(`${project.bathrooms} Bathrooms`);
+  if (project.attached_baths) tags.add('Attached Baths');
+  if (project.kitchens) tags.add(`${project.kitchens} Kitchen${project.kitchens > 1 ? 's' : ''}`);
+  if (project.drawing_dining) tags.add('Drawing & Dining');
+  if (project.tv_lounge) tags.add('TV Lounge');
+  if (project.car_porch) tags.add(`Porch: ${project.car_porch}`);
+  if (project.powder_room) tags.add('Powder Room');
+  if (project.dirty_kitchen) tags.add('Dirty Kitchen');
+  if (project.servant_quarter) tags.add('Servant Quarter');
+  if (project.mumty_rooftop) tags.add('Mumty & Rooftop');
   return Array.from(tags);
 }

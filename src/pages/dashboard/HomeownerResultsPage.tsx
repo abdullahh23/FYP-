@@ -192,6 +192,18 @@ export function HomeownerResultsPage() {
           <Metric icon={Home} label="Floors" value={String(currentProject.floors)} />
           <Metric icon={Sparkles} label="Material quality" value={currentProject.material_quality} />
         </div>
+        {currentProject.tags && currentProject.tags.length > 0 && (
+          <div className="border-t bg-muted/20 px-5 py-3 sm:px-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground mr-1">Project Layout & Features:</span>
+              {currentProject.tags.map((tag) => (
+                <span key={tag} className="inline-flex items-center rounded-md bg-card px-2.5 py-1 text-xs font-medium border shadow-2xs">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {estimate ? <EstimateAnalytics project={currentProject} /> : <EstimateUnavailable project={currentProject} onRetry={() => retryMutation.mutate()} loading={retryMutation.isPending} />}
