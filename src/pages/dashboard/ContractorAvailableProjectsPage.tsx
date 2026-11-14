@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from '../../components/ui/forms';
 import { Button } from '../../components/ui/button';
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../components/ui/toast';
 import { cityOptions, constructionOptions, materialQualityOptions } from '../../lib/constants';
 import { formatCurrency } from '../../lib/utils';
@@ -21,6 +22,7 @@ type QuoteForm = { amount: number; duration_days: number; warranty: string; note
 
 export function ContractorAvailableProjectsPage() {
   const { user } = useAuth();
+  const { tx, isUrdu } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<AvailableProjectFilters>({ sort: 'newest' });
@@ -78,21 +80,21 @@ export function ContractorAvailableProjectsPage() {
     <ContractorWorkspace>
       <div className="grid gap-6">
         <div>
-          <h1 className="text-3xl font-bold">Available Projects</h1>
-          <p className="mt-1 text-muted-foreground">Browse public homeowner projects and start quote conversations.</p>
+          <h1 className="text-3xl font-bold">{isUrdu ? 'دستیاب تعمیراتی منصوبے' : 'Available Projects'}</h1>
+          <p className="mt-1 text-muted-foreground">{isUrdu ? 'صارفین کے پبلک پروجیکٹس دیکھیں اور کوٹیشن جمع کروائیں۔' : 'Browse public homeowner projects and start quote conversations.'}</p>
         </div>
         <Card>
-          <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{isUrdu ? 'فلٹرز' : 'Filters'}</CardTitle></CardHeader>
           <CardContent>
             <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-6" onSubmit={filterForm.handleSubmit((values) => setFilters(values))}>
-              <Field label="City"><Select {...filterForm.register('city')}><option value="">All cities</option>{cityOptions.map((city) => <option key={city}>{city}</option>)}</Select></Field>
-              <Field label="Min budget"><Input type="number" {...filterForm.register('minBudget', { valueAsNumber: true })} /></Field>
-              <Field label="Max budget"><Input type="number" {...filterForm.register('maxBudget', { valueAsNumber: true })} /></Field>
-              <Field label="Plot size"><Input type="number" {...filterForm.register('plotSize', { valueAsNumber: true })} /></Field>
-              <Field label="Material"><Select {...filterForm.register('materialQuality')}><option value="">All</option>{materialQualityOptions.map((option) => <option key={option}>{option}</option>)}</Select></Field>
-              <Field label="Type"><Select {...filterForm.register('constructionType')}><option value="">All</option>{constructionOptions.map((option) => <option key={option}>{option}</option>)}</Select></Field>
-              <Field label="Sort"><Select {...filterForm.register('sort')}><option value="newest">Newest</option><option value="highest_budget">Highest Budget</option><option value="nearest">Nearest</option></Select></Field>
-              <div className="flex items-end"><Button className="w-full">Apply</Button></div>
+              <Field label={isUrdu ? 'شہر' : 'City'}><Select {...filterForm.register('city')}><option value="">{isUrdu ? 'تمام شہر' : 'All cities'}</option>{cityOptions.map((city) => <option key={city}>{city}</option>)}</Select></Field>
+              <Field label={isUrdu ? 'کم از کم بجٹ' : 'Min budget'}><Input type="number" {...filterForm.register('minBudget', { valueAsNumber: true })} /></Field>
+              <Field label={isUrdu ? 'زیادہ سے زیادہ بجٹ' : 'Max budget'}><Input type="number" {...filterForm.register('maxBudget', { valueAsNumber: true })} /></Field>
+              <Field label={isUrdu ? 'پلاٹ سائز' : 'Plot size'}><Input type="number" {...filterForm.register('plotSize', { valueAsNumber: true })} /></Field>
+              <Field label={isUrdu ? 'میٹریل کوالٹی' : 'Material'}><Select {...filterForm.register('materialQuality')}><option value="">{isUrdu ? 'تمام' : 'All'}</option>{materialQualityOptions.map((option) => <option key={option}>{option}</option>)}</Select></Field>
+              <Field label={isUrdu ? 'تعمیراتی قسم' : 'Type'}><Select {...filterForm.register('constructionType')}><option value="">{isUrdu ? 'تمام' : 'All'}</option>{constructionOptions.map((option) => <option key={option}>{option}</option>)}</Select></Field>
+              <Field label={isUrdu ? 'ترتیب' : 'Sort'}><Select {...filterForm.register('sort')}><option value="newest">{isUrdu ? 'تازہ ترین' : 'Newest'}</option><option value="highest_budget">{isUrdu ? 'زیادہ بجٹ' : 'Highest Budget'}</option><option value="nearest">{isUrdu ? 'قریبی' : 'Nearest'}</option></Select></Field>
+              <div className="flex items-end"><Button className="w-full">{isUrdu ? 'فلٹر لگائیں' : 'Apply'}</Button></div>
             </form>
           </CardContent>
         </Card>
@@ -104,20 +106,20 @@ export function ContractorAvailableProjectsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-bold">{project.title}</p>
-                    <p className="text-sm text-muted-foreground">{project.homeowner?.name ?? 'Homeowner'} · {project.city} · {project.plot_size} marla · {project.covered_area} sq ft · {project.floors} floors</p>
+                    <p className="text-sm text-muted-foreground">{project.homeowner?.name ?? 'Homeowner'} · {project.city} · {project.plot_size} {tx.marla} · {project.covered_area} {tx.sqft} · {project.floors} {isUrdu ? 'منزلیں' : 'floors'}</p>
                     <p className="mt-2 text-sm">{project.material_quality} · {project.construction_type}</p>
-                    <p className="mt-2 font-semibold text-primary">{project.ai_estimate_json ? `${formatCurrency(project.ai_estimate_json.total_estimate_min)} - ${formatCurrency(project.ai_estimate_json.total_estimate_max)}` : 'Budget estimate unavailable'}</p>
+                    <p className="mt-2 font-semibold text-emerald-600 dark:text-emerald-400">{project.ai_estimate_json ? `${formatCurrency(project.ai_estimate_json.total_estimate_min)} - ${formatCurrency(project.ai_estimate_json.total_estimate_max)}` : (isUrdu ? 'تخمینہ غیر دستیاب' : 'Budget estimate unavailable')}</p>
                   </div>
                   <Badge>{project.status}</Badge>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="secondary" onClick={() => setDetails(project)}><Eye className="h-4 w-4" /> View Project</Button>
-                  <Button type="button" size="sm" onClick={() => setQuoteTarget(project)}><Send className="h-4 w-4" /> Send Quote</Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={() => startChat(project)}><MessageSquareText className="h-4 w-4" /> Start Chat</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => setDetails(project)}><Eye className="h-4 w-4" /> {isUrdu ? 'پروجیکٹ دیکھیں' : 'View Project'}</Button>
+                  <Button type="button" size="sm" onClick={() => setQuoteTarget(project)}><Send className="h-4 w-4" /> {isUrdu ? 'کوٹیشن بھیجیں' : 'Send Quote'}</Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => startChat(project)}><MessageSquareText className="h-4 w-4" /> {isUrdu ? 'چیٹ شروع کریں' : 'Start Chat'}</Button>
                 </div>
               </CardContent>
             </Card>
-          )) : <Card><CardContent className="p-8 text-center text-muted-foreground">No available projects found.</CardContent></Card>}
+          )) : <Card><CardContent className="p-8 text-center text-muted-foreground">{isUrdu ? 'کوئی پروجیکٹ نہیں ملا۔' : 'No available projects found.'}</CardContent></Card>}
         </div>
 
         {chat && <ChatPanel projectId={chat.projectId} peerId={chat.homeownerId} quotationId={chat.quotationId} peerName={chat.homeownerName} />}

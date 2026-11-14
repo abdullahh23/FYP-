@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/button';
 import { Field, Input, Select, Textarea, Toggle } from '../../components/ui/forms';
 import { productCategories, productTags, productUnits } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   createProduct, getSupplierProfile, listMaterialQuoteRequests,
   listProducts, respondToMaterialQuote, upsertSupplierProfile,
@@ -37,19 +38,9 @@ type ResponseForm = { total_price: number; delivery_time: string; discount: numb
 
 type Section = 'dashboard' | 'products' | 'add-product' | 'orders' | 'messages' | 'notifications' | 'profile' | 'settings';
 
-const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
-  { id: 'products',     label: 'My Products',   icon: Package },
-  { id: 'add-product',  label: 'Add Product',   icon: PackagePlus },
-  { id: 'orders',       label: 'Orders',        icon: ClipboardList },
-  { id: 'messages',     label: 'Messages',      icon: MessageSquareText },
-  { id: 'notifications',label: 'Notifications', icon: Bell },
-  { id: 'profile',      label: 'Profile',       icon: User },
-  { id: 'settings',     label: 'Settings',      icon: Settings },
-];
-
 export function SupplierDashboard() {
   const { user, profile, signOut } = useAuth();
+  const { tx, isUrdu } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [section, setSection] = useState<Section>('dashboard');
@@ -57,6 +48,17 @@ export function SupplierDashboard() {
   const [productImages, setProductImages] = useState<File[]>([]);
   const [logo, setLogo] = useState<File | null>(null);
   const [banner, setBanner] = useState<File | null>(null);
+
+  const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
+    { id: 'dashboard',    label: tx.dashboard,             icon: LayoutDashboard },
+    { id: 'products',     label: tx.nav.products,          icon: Package },
+    { id: 'add-product',  label: tx.supplier.addProduct,   icon: PackagePlus },
+    { id: 'orders',       label: tx.nav.orders,            icon: ClipboardList },
+    { id: 'messages',     label: tx.nav.messages,          icon: MessageSquareText },
+    { id: 'notifications',label: tx.nav.notifications,     icon: Bell },
+    { id: 'profile',      label: tx.nav.profile,           icon: User },
+    { id: 'settings',     label: tx.nav.settings,          icon: Settings },
+  ];
   const [chatRequest, setChatRequest] = useState<{ projectId: string; homeownerId: string } | null>(null);
 
   const supplierProfile = useQuery({ queryKey: ['supplier-profile', user?.id], queryFn: () => getSupplierProfile(user!.id), enabled: Boolean(user?.id) });

@@ -7,6 +7,7 @@ import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from
 import { Button } from '../../components/ui/button';
 import { Field, Input, Select, Textarea } from '../../components/ui/forms';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../components/ui/toast';
 import { getContractorProfile, listIncomingRequests, rejectQuotation, submitQuotation, upsertContractorProfile } from '../../services/contractors';
 import { getConversation, listConversationsForUser, sendMessage } from '../../services/chat';
@@ -46,6 +47,7 @@ function requestedFeatures(project?: Project | null) {
 
 export function ContractorDashboard() {
   const { user } = useAuth();
+  const { tx, isUrdu } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -85,14 +87,14 @@ export function ContractorDashboard() {
     const accepted = rows.filter((request) => request.status === 'accepted');
     const active = accepted.filter((request) => request.projects?.progress_stage !== 'Completed');
     return [
-      { label: 'Total Requests', value: rows.length },
-      { label: 'Pending Requests', value: rows.filter((request) => request.status === 'pending').length },
-      { label: 'Accepted Projects', value: accepted.length },
-      { label: 'Active Projects', value: active.length },
-      { label: 'Completed Projects', value: accepted.filter((request) => request.projects?.progress_stage === 'Completed').length },
-      { label: 'Total Earnings', value: formatCurrency(accepted.reduce((total, request) => total + Number(request.amount ?? 0), 0)) }
+      { label: isUrdu ? 'کل موصولہ درخواستیں' : 'Total Requests', value: rows.length },
+      { label: isUrdu ? 'زیر التواء درخواستیں' : 'Pending Requests', value: rows.filter((request) => request.status === 'pending').length },
+      { label: isUrdu ? 'منظور شدہ منصوبے' : 'Accepted Projects', value: accepted.length },
+      { label: isUrdu ? 'جاری تعمیراتی سائٹس' : 'Active Projects', value: active.length },
+      { label: isUrdu ? 'مکمل شدہ منصوبے' : 'Completed Projects', value: accepted.filter((request) => request.projects?.progress_stage === 'Completed').length },
+      { label: isUrdu ? 'کل متوقع آمدنی' : 'Total Earnings', value: formatCurrency(accepted.reduce((total, request) => total + Number(request.amount ?? 0), 0)) }
     ];
-  }, [rows]);
+  }, [rows, isUrdu]);
 
   const saveProfile = useMutation({
     mutationFn: async (values: ProfileForm) => upsertContractorProfile(user!.id, { ...values, material_quality_preferences: values.material_quality_preferences.split(',').map((value) => value.trim()).filter(Boolean), portfolio_urls: contractorProfile.data?.portfolio_urls ?? [], average_rating: contractorProfile.data?.average_rating ?? 0 }),
@@ -179,8 +181,8 @@ export function ContractorDashboard() {
     <ContractorWorkspace>
       <div className="grid gap-6">
         <div>
-          <h1 className="text-3xl font-bold">Contractor Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Manage homeowner requests, quotations, chat, progress, and your contractor profile.</p>
+          <h1 className="text-3xl font-bold">{isUrdu ? 'ٹھیکیدار ورک اسپیس' : 'Contractor Dashboard'}</h1>
+          <p className="mt-1 text-muted-foreground">{isUrdu ? 'کلائنٹس کی موصولہ درخواستیں، کوٹیشنز، لائیو چیٹ، پروجیکٹ کی پیش رفت اور پروفائل مینیج کریں۔' : 'Manage homeowner requests, quotations, chat, progress, and your contractor profile.'}</p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
@@ -228,10 +230,12 @@ export function ContractorDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
-                <CardTitle>Homeowner Requests</CardTitle>
-                <CardDescription>All quotation requests sent by homeowners.</CardDescription>
+                <CardTitle>{isUrdu ? 'گھر بنانے والوں کی درخواستیں' : 'Homeowner Requests'}</CardTitle>
+                <CardDescription>{isUrdu ? 'کلائنٹس کی طرف سے موصول ہونے والی تمام کوٹیشن درخواستیں۔' : 'All quotation requests sent by homeowners.'}</CardDescription>
               </div>
-              <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/dashboard/available-projects')}>Browse projects</Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/dashboard/available-projects')}>
+                {isUrdu ? 'پروجیکٹس تلاش کریں' : 'Browse projects'}
+              </Button>
             </CardHeader>
             <CardContent className="grid gap-4">
               {rows.length ? rows.map((request) => {
@@ -254,11 +258,11 @@ export function ContractorDashboard() {
                     </div>
                     {features.length > 0 && <p className="mt-3 text-sm text-muted-foreground">Features: {features.join(', ')}</p>}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="secondary" onClick={() => setDetails(request)}><Eye className="h-4 w-4" /> View Details</Button>
-                      <Button type="button" size="sm" onClick={() => setQuoteTarget(request)}><Send className="h-4 w-4" /> Send Quote</Button>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => openChat(request)}><MessageSquareText className="h-4 w-4" /> Chat</Button>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => setFullDetail(request)}><Eye className="h-4 w-4" /> View Estimate</Button>
-                      <Button type="button" size="sm" variant="danger" onClick={() => rejectRequest(request.id)}>Reject</Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setDetails(request)}><Eye className="h-4 w-4" /> {isUrdu ? 'تفصیلات دیکھیں' : 'View Details'}</Button>
+                      <Button type="button" size="sm" onClick={() => setQuoteTarget(request)}><Send className="h-4 w-4" /> {isUrdu ? 'کوٹیشن بھیجیں' : 'Send Quote'}</Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => openChat(request)}><MessageSquareText className="h-4 w-4" /> {isUrdu ? 'چیٹ' : 'Chat'}</Button>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setFullDetail(request)}><Eye className="h-4 w-4" /> {isUrdu ? 'تخمینہ دیکھیں' : 'View Estimate'}</Button>
+                      <Button type="button" size="sm" variant="danger" onClick={() => rejectRequest(request.id)}>{isUrdu ? 'مسترد کریں' : 'Reject'}</Button>
                     </div>
                     {request.status === 'accepted' && (
                       <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">

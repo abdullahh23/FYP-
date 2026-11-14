@@ -7,29 +7,36 @@ import { AuthFrame } from './LoginPage';
 import { Field, Input } from '../../components/ui/forms';
 import { Button } from '../../components/ui/button';
 import { useToast } from '../../components/ui/toast';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const schema = z.object({ email: z.string().email() });
 
 export function ForgotPasswordPage() {
   const { toast } = useToast();
+  const { tx } = useLanguage();
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { email: '' } });
 
   async function onSubmit(values: z.infer<typeof schema>) {
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, { redirectTo: `${window.location.origin}/login` });
-    if (error) toast({ title: 'Could not send reset link', description: error.message, type: 'error' });
-    else toast({ title: 'Reset link sent', description: 'Please check your email.', type: 'success' });
+    if (error) {
+      toast({ title: 'Error', description: error.message, type: 'error' });
+    } else {
+      toast({ title: tx.auth.resetLinkSent, type: 'success' });
+    }
   }
 
   return (
-    <AuthFrame title="Reset your password" subtitle="We will email a secure reset link if the account exists.">
+    <AuthFrame title={tx.auth.forgotPasswordTitle} subtitle={tx.auth.forgotPasswordSubtitle}>
       <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <Field label="Email" error={form.formState.errors.email?.message}>
-          <Input type="email" {...form.register('email')} />
+        <Field label={tx.auth.email} error={form.formState.errors.email?.message}>
+          <Input type="email" placeholder="name@example.com" {...form.register('email')} />
         </Field>
-        <Button loading={form.formState.isSubmitting}>Send reset link</Button>
+        <Button loading={form.formState.isSubmitting} className="w-full font-bold">
+          {tx.auth.sendResetLink}
+        </Button>
       </form>
-      <Link className="mt-5 block text-center text-sm font-semibold text-primary" to="/login">
-        Back to sign in
+      <Link className="mt-5 block text-center text-sm font-semibold text-primary hover:underline" to="/login">
+        ← {tx.signIn}
       </Link>
     </AuthFrame>
   );

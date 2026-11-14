@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   cityOptions,
   constructionOptions,
@@ -119,28 +120,10 @@ const defaults: FormValues = {
   mumty_rooftop: true
 };
 
-const steps: Array<{ label: string; eyebrow: string; title: string; description: string; fields: FieldPath<FormValues>[] }> = [
-  { label: 'Project', eyebrow: 'Let\'s begin', title: 'Where are you planning to build?', description: 'Start with a name and location for your project.', fields: ['title', 'city'] },
-  { label: 'Space', eyebrow: 'Size and scale', title: 'How much space are you working with?', description: 'These dimensions have the largest impact on your estimate.', fields: ['plot_size', 'covered_area', 'floors'] },
-  { label: 'Layout', eyebrow: 'Rooms & Floor Plan', title: 'How many rooms and spaces do you need?', description: 'Specify bedrooms, attached bathrooms, kitchens per floor, and key spaces.', fields: ['bedrooms', 'bathrooms', 'kitchens', 'car_porch'] },
-  { label: 'Site', eyebrow: 'Ground conditions', title: 'Tell us about the building site', description: 'Site conditions help estimate foundation and preparation costs.', fields: ['soil_type', 'basement'] },
-  { label: 'Build', eyebrow: 'Construction plan', title: 'What level of construction do you need?', description: 'Choose the scope and material quality that fit your goals.', fields: ['construction_type', 'material_quality'] },
-  { label: 'Finish', eyebrow: 'Look and feel', title: 'Choose your finishing standards', description: 'Select the finish level for the spaces inside and out.', fields: ['interior_finish', 'exterior_finish'] },
-  { label: 'Features', eyebrow: 'Final details', title: 'Which features should we include?', description: 'Add every feature you want included in the estimate.', fields: ['parking', 'solar', 'smart_home', 'garden', 'swimming_pool'] },
-  { label: 'Review', eyebrow: 'Ready to estimate', title: 'Review your project', description: 'Confirm the details below before BuildWise prepares your estimate.', fields: [] }
-];
-
-const featureFields = [
-  ['parking', 'Parking'],
-  ['solar', 'Solar power'],
-  ['smart_home', 'Smart home'],
-  ['garden', 'Garden'],
-  ['swimming_pool', 'Swimming pool']
-] as const;
-
 export function HomeownerDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { tx, isUrdu } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
@@ -155,6 +138,64 @@ export function HomeownerDashboard() {
   const conversations = useQuery({ queryKey: ['conversations', user?.id], queryFn: () => listConversationsForUser(user!.id), enabled: Boolean(user?.id) });
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults, mode: 'onTouched' });
 
+  const steps: Array<{ label: string; eyebrow: string; title: string; description: string; fields: FieldPath<FormValues>[] }> = [
+    {
+      label: isUrdu ? 'منصوبہ' : 'Project',
+      eyebrow: isUrdu ? 'آئیے آغاز کریں' : "Let's begin",
+      title: isUrdu ? 'آپ کہاں تعمیر کرنا چاہتے ہیں؟' : 'Where are you planning to build?',
+      description: isUrdu ? 'اپنے منصوبے کا نام اور شہر منتخب کریں۔' : 'Start with a name and location for your project.',
+      fields: ['title', 'city']
+    },
+    {
+      label: isUrdu ? 'رقبہ' : 'Space',
+      eyebrow: isUrdu ? 'پلاٹ اور کورڈ ایریا' : 'Size and scale',
+      title: isUrdu ? 'پلاٹ کا سائز اور رقبہ کتنا ہے؟' : 'How much space are you working with?',
+      description: isUrdu ? 'یہ پیمائشیں آپ کے تخمینے پر سب سے زیادہ اثر انداز ہوتی ہیں۔' : 'These dimensions have the largest impact on your estimate.',
+      fields: ['plot_size', 'covered_area', 'floors']
+    },
+    {
+      label: isUrdu ? 'لے آؤٹ' : 'Layout',
+      eyebrow: isUrdu ? 'کمرے اور فلور پلان' : 'Rooms & Floor Plan',
+      title: isUrdu ? 'آپ کو کتنے کمروں کی ضرورت ہے؟' : 'How many rooms and spaces do you need?',
+      description: isUrdu ? 'بیڈ رومز، باتھ رومز، کچن اور پورچ کی تفصیلات درج کریں۔' : 'Specify bedrooms, attached bathrooms, kitchens per floor, and key spaces.',
+      fields: ['bedrooms', 'bathrooms', 'kitchens', 'car_porch']
+    },
+    {
+      label: isUrdu ? 'زمین' : 'Site',
+      eyebrow: isUrdu ? 'سائٹ کی حالت' : 'Ground conditions',
+      title: isUrdu ? 'تعمیراتی جگہ کی تفصیل بتائیں' : 'Tell us about the building site',
+      description: isUrdu ? 'مٹی کی قسم اور تہہ خانے سے بنیادوں کی لاگت کا درست تعین ہوتا ہے۔' : 'Site conditions help estimate foundation and preparation costs.',
+      fields: ['soil_type', 'basement']
+    },
+    {
+      label: isUrdu ? 'تعمیر' : 'Build',
+      eyebrow: isUrdu ? 'تعمیراتی پیکج' : 'Construction plan',
+      title: isUrdu ? 'تعمیراتی پیکج اور میٹریل کا گریڈ منتخب کریں' : 'What level of construction do you need?',
+      description: isUrdu ? 'گرے اسٹرکچر یا ٹرن کی اور میٹریل کوالٹی منتخب کریں۔' : 'Choose the scope and material quality that fit your goals.',
+      fields: ['construction_type', 'material_quality']
+    },
+    {
+      label: isUrdu ? 'فنشنگ' : 'Finish',
+      eyebrow: isUrdu ? 'ڈیزائن اور فنشنگ' : 'Look and feel',
+      title: isUrdu ? 'اندرونی و بیرونی فنشنگ کا معیار' : 'Choose your finishing standards',
+      description: isUrdu ? 'ٹائلز، پینٹ اور ایلیویشن کا معیار طے کریں۔' : 'Select the finish level for the spaces inside and out.',
+      fields: ['interior_finish', 'exterior_finish']
+    },
+    {
+      label: isUrdu ? 'سہولیات' : 'Features',
+      eyebrow: isUrdu ? 'اضافی فیچرز' : 'Final details',
+      title: isUrdu ? 'کونسی جدید سہولیات شامل کرنا چاہتے ہیں؟' : 'Which features should we include?',
+      description: isUrdu ? 'سولر، سمارٹ آٹومیشن، لان یا پول کا انتخاب کریں۔' : 'Add every feature you want included in the estimate.',
+      fields: ['parking', 'solar', 'smart_home', 'garden', 'swimming_pool']
+    },
+    {
+      label: isUrdu ? 'جائزہ' : 'Review',
+      eyebrow: isUrdu ? 'تخمینہ تیار ہے' : 'Ready to estimate',
+      title: isUrdu ? 'اپنے منصوبے کی تفصیلات کا جائزہ لیں' : 'Review your project',
+      description: isUrdu ? 'اے آئی کے ذریعے تفصیلی تخمینہ تیار کرنے سے پہلے تصدیق کریں۔' : 'Confirm the details below before BuildWise prepares your estimate.',
+      fields: []
+    }
+  ];
 
   useEffect(() => {
     if (phase !== 'estimating') return;
@@ -208,7 +249,7 @@ export function HomeownerDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      toast({ title: 'Project duplicated successfully', type: 'success' });
+      toast({ title: isUrdu ? 'منصوبہ کامیابی سے کاپی ہو گیا' : 'Project duplicated successfully', type: 'success' });
     },
     onError: (error) => {
       toast({ title: 'Failed to duplicate project', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
@@ -221,7 +262,7 @@ export function HomeownerDashboard() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      toast({ title: variables.archived ? 'Project archived' : 'Project restored', type: 'success' });
+      toast({ title: variables.archived ? (isUrdu ? 'منصوبہ آرکائیو ہو گیا' : 'Project archived') : (isUrdu ? 'منصوبہ بحال ہو گیا' : 'Project restored'), type: 'success' });
     },
     onError: (error) => {
       toast({ title: 'Action failed', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
@@ -234,7 +275,7 @@ export function HomeownerDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      toast({ title: 'Project deleted successfully', type: 'success' });
+      toast({ title: isUrdu ? 'منصوبہ حذف کر دیا گیا ہے' : 'Project deleted successfully', type: 'success' });
     },
     onError: (error) => {
       toast({ title: 'Failed to delete project', description: error instanceof Error ? error.message : 'Please try again.', type: 'error' });
@@ -253,7 +294,7 @@ export function HomeownerDashboard() {
     setStep((value) => Math.max(value - 1, 0));
   }
 
-  if (phase === 'estimating') return <AiLoadingScreen progress={aiProgress} />;
+  if (phase === 'estimating') return <AiLoadingScreen progress={aiProgress} isUrdu={isUrdu} />;
 
   const hasProjects = projects.data && projects.data.length > 0;
 
@@ -266,11 +307,17 @@ export function HomeownerDashboard() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Your Construction Projects</h1>
-            <p className="mt-1 text-muted-foreground">View previous estimates, track contractor progress, and manage your projects.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              {isUrdu ? 'آپ کے تعمیراتی منصوبے' : 'Your Construction Projects'}
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              {isUrdu
+                ? 'سابقہ تخمینے دیکھیں، ٹھیکیداروں کی کوٹیشنز اور پیش رفت کی نگرانی کریں۔'
+                : 'View previous estimates, track contractor progress, and manage your projects.'}
+            </p>
           </div>
-          <Button onClick={() => { setEditingProjectId(null); setShowWizard(true); setStep(0); form.reset(defaults); }}>
-            <WandSparkles className="mr-2 h-4 w-4" /> Create New Estimate
+          <Button onClick={() => { setEditingProjectId(null); setShowWizard(true); setStep(0); form.reset(defaults); }} className="gap-2 font-semibold">
+            <WandSparkles className="h-4 w-4" /> {tx.estimator.newProject}
           </Button>
         </div>
 
@@ -280,21 +327,25 @@ export function HomeownerDashboard() {
             className={cn("px-4 py-2 text-sm font-semibold rounded-lg transition-colors", !showArchived ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
             onClick={() => setShowArchived(false)}
           >
-            Active Projects ({(projects.data ?? []).filter(p => !p.is_archived).length})
+            {tx.estimator.activeProjects} ({(projects.data ?? []).filter(p => !p.is_archived).length})
           </button>
           <button
             type="button"
             className={cn("px-4 py-2 text-sm font-semibold rounded-lg transition-colors", showArchived ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
             onClick={() => setShowArchived(true)}
           >
-            Archived Projects ({(projects.data ?? []).filter(p => p.is_archived).length})
+            {tx.estimator.archivedProjects} ({(projects.data ?? []).filter(p => p.is_archived).length})
           </button>
         </div>
 
         {filteredProjects.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground bg-card shadow-sm">
-            <p className="font-semibold text-lg">No {showArchived ? 'archived' : 'active'} projects found</p>
-            <p className="mt-1 text-sm">Start by creating a new estimate or restoring from archive.</p>
+            <p className="font-semibold text-lg">
+              {showArchived
+                ? (isUrdu ? 'کوئی آرکائیو شدہ منصوبہ نہیں ملا' : 'No archived projects found')
+                : (isUrdu ? 'کوئی جاری منصوبہ نہیں ہے' : 'No active projects found')}
+            </p>
+            <p className="mt-1 text-sm">{tx.estimator.noProjectsYet}</p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -308,7 +359,7 @@ export function HomeownerDashboard() {
                       <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                         <Home className="h-5 w-5" />
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <Badge>
                           {project.status}
                         </Badge>
@@ -336,13 +387,24 @@ export function HomeownerDashboard() {
                               solar: project.solar,
                               smart_home: project.smart_home,
                               garden: project.garden,
-                              swimming_pool: project.swimming_pool
+                              swimming_pool: project.swimming_pool,
+                              bedrooms: 4,
+                              bathrooms: 4,
+                              attached_baths: true,
+                              powder_room: true,
+                              kitchens: 2,
+                              dirty_kitchen: false,
+                              drawing_dining: true,
+                              tv_lounge: true,
+                              car_porch: '2 Cars',
+                              servant_quarter: false,
+                              mumty_rooftop: true
                             });
                             setStep(0);
                             setShowWizard(true);
                           }}
-                          aria-label="Edit project"
-                          title="Edit project"
+                          aria-label={tx.edit}
+                          title={tx.edit}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -356,8 +418,8 @@ export function HomeownerDashboard() {
                             duplicateMutation.mutate(project.id);
                           }}
                           disabled={duplicateMutation.isPending}
-                          aria-label="Duplicate project"
-                          title="Duplicate project"
+                          aria-label={tx.duplicate}
+                          title={tx.duplicate}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -371,7 +433,7 @@ export function HomeownerDashboard() {
                             archiveMutation.mutate({ projectId: project.id, archived: !project.is_archived });
                           }}
                           disabled={archiveMutation.isPending}
-                          aria-label="Archive project"
+                          aria-label={tx.archive}
                           title={project.is_archived ? "Restore project" : "Archive project"}
                         >
                           {project.is_archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
@@ -385,8 +447,8 @@ export function HomeownerDashboard() {
                             e.stopPropagation();
                             setDeleteTarget({ id: project.id, title: project.title });
                           }}
-                          aria-label="Delete project"
-                          title="Delete project"
+                          aria-label={tx.delete}
+                          title={tx.delete}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -394,29 +456,29 @@ export function HomeownerDashboard() {
                     </div>
                     <CardTitle className="mt-4 text-xl font-bold line-clamp-1">{project.title}</CardTitle>
                     <CardDescription className="text-sm">
-                      {project.city} · {project.plot_size} marla
+                      {project.city} · {project.plot_size} {tx.marla}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{project.covered_area.toLocaleString()} sq ft · {project.floors} floors</p>
-                      <p>{project.construction_type} · {project.material_quality} Quality</p>
+                      <p>{project.covered_area.toLocaleString()} {tx.sqft} · {project.floors} {isUrdu ? 'منزلیں' : 'floors'}</p>
+                      <p>{project.construction_type} · {project.material_quality} {isUrdu ? 'معیار' : 'Quality'}</p>
                       {project.progress_stage && (
                         <div className="mt-2 pt-2 border-t">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase">Progress</p>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase">{isUrdu ? 'تعمیراتی مرحلہ' : 'Progress'}</p>
                           <p className="font-semibold text-primary">{project.progress_stage}</p>
                         </div>
                       )}
                     </div>
                     <div className="mt-4 pt-4 border-t flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-muted-foreground">AI Estimate Range</p>
-                        <p className="font-bold text-primary">
-                          {minEstimate && maxEstimate ? `${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}` : 'Not estimated'}
+                        <p className="text-xs text-muted-foreground">{tx.estimator.totalEstimatedCost}</p>
+                        <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                          {minEstimate && maxEstimate ? `${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}` : (isUrdu ? 'تخمینہ درکار ہے' : 'Not estimated')}
                         </p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/projects/${project.id}/results`)}>
-                        View <ChevronRight className="ml-1 h-4 w-4" />
+                        {tx.viewDetails} <ChevronRight className={isUrdu ? 'mr-1 h-4 w-4 rotate-180' : 'ml-1 h-4 w-4'} />
                       </Button>
                     </div>
                   </CardContent>
@@ -429,8 +491,8 @@ export function HomeownerDashboard() {
         {conversations.data && conversations.data.length > 0 && (
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Recent Messages</CardTitle>
-              <CardDescription>Resume chatting with your contractors and suppliers.</CardDescription>
+              <CardTitle>{isUrdu ? 'حالیہ پیغامات و بات چیت' : 'Recent Messages'}</CardTitle>
+              <CardDescription>{isUrdu ? 'اپنے ٹھیکیداروں اور سپلائرز کے ساتھ بات چیت جاری رکھیں۔' : 'Resume chatting with your contractors and suppliers.'}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {conversations.data.slice(0, 6).map((thread) => {
@@ -459,7 +521,6 @@ export function HomeownerDashboard() {
         )}
 
         <DeleteProjectModal
-
           open={Boolean(deleteTarget)}
           projectTitle={deleteTarget?.title ?? ''}
           loading={deleteMutation.isPending}
@@ -483,13 +544,18 @@ export function HomeownerDashboard() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-primary">New cost estimate</p>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Plan your construction project</h1>
+          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            {isUrdu ? 'نیا لاگت کا تخمینہ' : 'New cost estimate'}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
+            {isUrdu ? 'اپنے تعمیراتی منصوبے کی منصوبہ بندی کریں' : 'Plan your construction project'}
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           {hasProjects && (
             <Button variant="ghost" onClick={() => setShowWizard(false)}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to projects
+              <ArrowLeft className={isUrdu ? 'ml-2 h-4 w-4 rotate-180' : 'mr-2 h-4 w-4'} />
+              {isUrdu ? 'منصوبوں پر واپس جائیں' : 'Back to projects'}
             </Button>
           )}
           {projects.data?.length ? (
@@ -499,7 +565,7 @@ export function HomeownerDashboard() {
               defaultValue=""
               onChange={(event) => event.target.value && navigate(`/dashboard/projects/${event.target.value}/results`)}
             >
-              <option value="" disabled>Previous estimates</option>
+              <option value="" disabled>{isUrdu ? 'سابقہ تخمینے دیکھیں' : 'Previous estimates'}</option>
               {projects.data.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
             </Select>
           ) : null}
@@ -507,15 +573,15 @@ export function HomeownerDashboard() {
       </div>
 
       <div className="mb-3 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-        <span>Step {step + 1} of {steps.length}</span>
+        <span>{isUrdu ? `مرحلہ ${step + 1} از ${steps.length}` : `Step ${step + 1} of ${steps.length}`}</span>
         <span>{current.label}</span>
       </div>
       <div className="mb-8 h-1.5 overflow-hidden rounded-full bg-muted">
-        <motion.div className="h-full rounded-full bg-primary" animate={{ width: `${progress}%` }} transition={{ duration: 0.35, ease: 'easeOut' }} />
+        <motion.div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500" animate={{ width: `${progress}%` }} transition={{ duration: 0.35, ease: 'easeOut' }} />
       </div>
 
       <form onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}>
-        <div className="min-h-[500px] overflow-hidden rounded-lg border bg-card shadow-panel sm:min-h-[520px]">
+        <div className="min-h-[500px] overflow-hidden rounded-2xl border bg-card shadow-panel sm:min-h-[520px]">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.section
               key={step}
@@ -527,26 +593,26 @@ export function HomeownerDashboard() {
               className="mx-auto flex min-h-[500px] max-w-3xl flex-col px-5 py-8 sm:min-h-[520px] sm:px-10 sm:py-12"
             >
               <div className="mb-8">
-                <p className="text-xs font-bold uppercase tracking-widest text-primary">{current.eyebrow}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">{current.eyebrow}</p>
                 <h2 className="mt-3 text-2xl font-bold sm:text-4xl">{current.title}</h2>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">{current.description}</p>
               </div>
 
               <div className="flex-1">
-                <StepContent step={step} form={form} />
+                <StepContent step={step} form={form} isUrdu={isUrdu} tx={tx} />
               </div>
 
               <div className="mt-10 flex items-center justify-between border-t pt-5">
                 <Button type="button" variant="ghost" onClick={goBack} disabled={step === 0}>
-                  <ArrowLeft className="h-4 w-4" /> Previous
+                  <ArrowLeft className={isUrdu ? 'ml-2 h-4 w-4 rotate-180' : 'mr-2 h-4 w-4'} /> {tx.back}
                 </Button>
                 {step < steps.length - 1 ? (
                   <Button type="button" onClick={goNext}>
-                    Next <ArrowRight className="h-4 w-4" />
+                    {tx.next} <ArrowRight className={isUrdu ? 'mr-2 h-4 w-4 rotate-180' : 'ml-2 h-4 w-4'} />
                   </Button>
                 ) : (
-                  <Button type="submit" size="lg" loading={saveMutation.isPending}>
-                    <WandSparkles className="h-4 w-4" /> Generate estimate
+                  <Button type="submit" size="lg" loading={saveMutation.isPending} className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <WandSparkles className="mr-2 h-4 w-4" /> {tx.estimator.calculateEstimate}
                   </Button>
                 )}
               </div>
@@ -558,8 +624,8 @@ export function HomeownerDashboard() {
       <div className="mt-5 hidden items-center justify-center gap-2 text-xs text-muted-foreground sm:flex">
         {steps.map((item, index) => (
           <div key={item.label} className="flex items-center gap-2">
-            <span className={index <= step ? 'font-semibold text-primary' : ''}>{item.label}</span>
-            {index < steps.length - 1 && <ChevronRight className="h-3 w-3" />}
+            <span className={index <= step ? 'font-semibold text-emerald-600 dark:text-emerald-400' : ''}>{item.label}</span>
+            {index < steps.length - 1 && <ChevronRight className={isUrdu ? 'h-3 w-3 rotate-180' : 'h-3 w-3'} />}
           </div>
         ))}
       </div>
@@ -567,17 +633,31 @@ export function HomeownerDashboard() {
   );
 }
 
-function StepContent({ step, form }: { step: number; form: ReturnType<typeof useForm<FormValues>> }) {
+function StepContent({
+  step,
+  form,
+  isUrdu,
+  tx
+}: {
+  step: number;
+  form: ReturnType<typeof useForm<FormValues>>;
+  isUrdu: boolean;
+  tx: ReturnType<typeof useLanguage>['tx'];
+}) {
   const errors = form.formState.errors;
 
   if (step === 0) {
     return (
       <div className="grid gap-6 sm:grid-cols-2">
-        <Field label="Project name" error={errors.title?.message}>
-          <Input autoFocus placeholder="e.g. My family home" {...form.register('title')} />
+        <Field label={tx.estimator.projectTitleLabel} error={errors.title?.message}>
+          <Input autoFocus placeholder={tx.estimator.projectTitlePlaceholder} {...form.register('title')} />
         </Field>
-        <Field label="City" error={errors.city?.message}>
-          <Select {...form.register('city')}>{cityOptions.map((option) => <option key={option}>{option}</option>)}</Select>
+        <Field label={tx.estimator.cityLabel} error={errors.city?.message}>
+          <Select {...form.register('city')}>
+            {cityOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </Select>
         </Field>
       </div>
     );
@@ -586,149 +666,293 @@ function StepContent({ step, form }: { step: number; form: ReturnType<typeof use
   if (step === 1) {
     return (
       <div className="grid gap-6 sm:grid-cols-3">
-        <Field label="Plot size (marla)" error={errors.plot_size?.message}><Input type="number" min="0" step="0.1" {...form.register('plot_size')} /></Field>
-        <Field label="Covered area (sq ft)" error={errors.covered_area?.message}><Input type="number" min="0" {...form.register('covered_area')} /></Field>
-        <Field label="Floors" error={errors.floors?.message}><Input type="number" min="1" max="80" {...form.register('floors')} /></Field>
+        <Field label={`${tx.estimator.plotSizeLabel}`} error={errors.plot_size?.message}>
+          <Input type="number" min="0" step="0.1" {...form.register('plot_size')} />
+          <p className="mt-1 text-xs text-muted-foreground">{tx.estimator.plotSizeHelp}</p>
+        </Field>
+        <Field label={`${tx.estimator.coveredAreaLabel}`} error={errors.covered_area?.message}>
+          <Input type="number" min="0" {...form.register('covered_area')} />
+          <p className="mt-1 text-xs text-muted-foreground">{tx.estimator.coveredAreaHelp}</p>
+        </Field>
+        <Field label={tx.estimator.floorsLabel} error={errors.floors?.message}>
+          <Input type="number" min="1" max="80" {...form.register('floors')} />
+        </Field>
       </div>
     );
   }
 
   // Step 2: Rooms & Layout
   if (step === 2) {
-    const carPorchOptions = ['1 Car', '2 Cars', '3+ Cars'] as const;
+    const carPorchOptions = [
+      { value: '1 Car', label: isUrdu ? '1 چھوٹی گاڑی' : '1 Car' },
+      { value: '2 Cars', label: isUrdu ? '2 گاڑیاں' : '2 Cars' },
+      { value: '3+ Cars', label: isUrdu ? '3 یا زائد گاڑیاں' : '3+ Cars' }
+    ];
     return (
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Bedrooms" error={errors.bedrooms?.message}>
+          <Field label={tx.estimator.bedrooms} error={errors.bedrooms?.message}>
             <Input type="number" min="1" max="20" {...form.register('bedrooms', { valueAsNumber: true })} />
           </Field>
-          <Field label="Washrooms / Baths" error={errors.bathrooms?.message}>
+          <Field label={tx.estimator.bathrooms} error={errors.bathrooms?.message}>
             <Input type="number" min="1" max="20" {...form.register('bathrooms', { valueAsNumber: true })} />
           </Field>
-          <Field label="Kitchens" error={errors.kitchens?.message}>
+          <Field label={tx.estimator.kitchens} error={errors.kitchens?.message}>
             <Input type="number" min="1" max="10" {...form.register('kitchens', { valueAsNumber: true })} />
           </Field>
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Attached Bathrooms & Kitchen Layout</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {isUrdu ? 'منسلک باتھ رومز اور کچن کا لے آؤٹ' : 'Attached Bathrooms & Kitchen Layout'}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Toggle label="Attached baths with all bedrooms" checked={form.watch('attached_baths')} onChange={(v) => form.setValue('attached_baths', v, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="Guest powder room (Ground floor)" checked={form.watch('powder_room')} onChange={(v) => form.setValue('powder_room', v, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="Kitchen on both/each floor" checked={form.watch('kitchens') >= 2} onChange={(v) => form.setValue('kitchens', v ? Math.max(2, form.watch('kitchens')) : 1, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="Separate dirty/spice kitchen" checked={form.watch('dirty_kitchen')} onChange={(v) => form.setValue('dirty_kitchen', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle
+              label={tx.estimator.attachedBaths}
+              checked={form.watch('attached_baths')}
+              onChange={(v) => form.setValue('attached_baths', v, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={tx.estimator.powderRoom}
+              checked={form.watch('powder_room')}
+              onChange={(v) => form.setValue('powder_room', v, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={isUrdu ? 'ہر فلور پر کچن' : 'Kitchen on both/each floor'}
+              checked={form.watch('kitchens') >= 2}
+              onChange={(v) => form.setValue('kitchens', v ? Math.max(2, form.watch('kitchens')) : 1, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={tx.estimator.dirtyKitchen}
+              checked={form.watch('dirty_kitchen')}
+              onChange={(v) => form.setValue('dirty_kitchen', v, { shouldValidate: true, shouldDirty: true })}
+            />
           </div>
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Living Spaces & Utilities</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {isUrdu ? 'رہائشی حصے اور دیگر جگہیں' : 'Living Spaces & Utilities'}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Toggle label="Drawing & Dining Room" checked={form.watch('drawing_dining')} onChange={(v) => form.setValue('drawing_dining', v, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="TV Lounge on each floor" checked={form.watch('tv_lounge')} onChange={(v) => form.setValue('tv_lounge', v, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="Mumty & Rooftop access" checked={form.watch('mumty_rooftop')} onChange={(v) => form.setValue('mumty_rooftop', v, { shouldValidate: true, shouldDirty: true })} />
-            <Toggle label="Servant quarter with attached bath" checked={form.watch('servant_quarter')} onChange={(v) => form.setValue('servant_quarter', v, { shouldValidate: true, shouldDirty: true })} />
+            <Toggle
+              label={tx.estimator.drawingDining}
+              checked={form.watch('drawing_dining')}
+              onChange={(v) => form.setValue('drawing_dining', v, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={tx.estimator.tvLounge}
+              checked={form.watch('tv_lounge')}
+              onChange={(v) => form.setValue('tv_lounge', v, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={tx.estimator.mumtyRooftop}
+              checked={form.watch('mumty_rooftop')}
+              onChange={(v) => form.setValue('mumty_rooftop', v, { shouldValidate: true, shouldDirty: true })}
+            />
+            <Toggle
+              label={tx.estimator.servantQuarter}
+              checked={form.watch('servant_quarter')}
+              onChange={(v) => form.setValue('servant_quarter', v, { shouldValidate: true, shouldDirty: true })}
+            />
           </div>
         </div>
 
         <div>
-          <ChoiceGrid label="Car Porch Capacity" value={form.watch('car_porch')} options={carPorchOptions} onChange={(v) => form.setValue('car_porch', v, { shouldValidate: true })} />
+          <ChoiceGridMapped
+            label={tx.estimator.carPorch}
+            value={form.watch('car_porch')}
+            options={carPorchOptions}
+            onChange={(v) => form.setValue('car_porch', v, { shouldValidate: true })}
+          />
         </div>
       </div>
     );
   }
 
   if (step === 3) {
+    const soilMapped = soilOptions.map((opt) => ({
+      value: opt,
+      label: isUrdu
+        ? opt === 'Clay' ? 'چکنی مٹی (Clay)' : opt === 'Sandy' ? 'ریتلی مٹی (Sandy)' : opt === 'Rocky' ? 'پتھریلی مٹی (Rocky)' : 'عام مکس مٹی (Mixed)'
+        : opt
+    }));
+
     return (
       <div className="grid gap-6 sm:grid-cols-2">
-        <Field label="Soil type" error={errors.soil_type?.message}>
-          <Select {...form.register('soil_type')}>{soilOptions.map((option) => <option key={option}>{option}</option>)}</Select>
+        <Field label={tx.estimator.soilTypeLabel} error={errors.soil_type?.message}>
+          <Select {...form.register('soil_type')}>
+            {soilMapped.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </Select>
         </Field>
         <div>
-          <p className="mb-2 text-sm font-medium">Basement</p>
-          <Toggle label="Include a basement" checked={form.watch('basement')} onChange={(value) => form.setValue('basement', value, { shouldValidate: true, shouldDirty: true })} />
+          <p className="mb-2 text-sm font-medium">{tx.estimator.basementLabel}</p>
+          <Toggle
+            label={tx.estimator.basementDesc}
+            checked={form.watch('basement')}
+            onChange={(value) => form.setValue('basement', value, { shouldValidate: true, shouldDirty: true })}
+          />
         </div>
       </div>
     );
   }
 
   if (step === 4) {
+    const constructionMapped = constructionOptions.map((opt) => ({
+      value: opt,
+      label: isUrdu ? (opt === 'Grey Structure' ? 'گرے اسٹرکچر (صرف بنیادی ڈھانچہ)' : 'ٹرن کی (مکمل فنشنگ کے ساتھ)') : opt
+    }));
+    const qualityMapped = materialQualityOptions.map((opt) => ({
+      value: opt,
+      label: isUrdu ? (opt === 'Economy' ? 'اکنامی (بجٹ فرینڈلی)' : opt === 'Standard' ? 'اسٹینڈرڈ (معیاری)' : opt === 'Premium' ? 'پریمیم (اعلیٰ کوالٹی)' : 'لگژری (شاہانہ)') : opt
+    }));
+
     return (
       <div className="grid gap-6 sm:grid-cols-2">
-        <ChoiceGrid label="Construction type" value={form.watch('construction_type')} options={constructionOptions} onChange={(value) => form.setValue('construction_type', value, { shouldValidate: true })} />
-        <ChoiceGrid label="Material quality" value={form.watch('material_quality')} options={materialQualityOptions} onChange={(value) => form.setValue('material_quality', value, { shouldValidate: true })} />
+        <ChoiceGridMapped
+          label={tx.estimator.constructionTypeLabel}
+          value={form.watch('construction_type')}
+          options={constructionMapped}
+          onChange={(value) => form.setValue('construction_type', value, { shouldValidate: true })}
+        />
+        <ChoiceGridMapped
+          label={tx.estimator.materialQualityLabel}
+          value={form.watch('material_quality')}
+          options={qualityMapped}
+          onChange={(value) => form.setValue('material_quality', value, { shouldValidate: true })}
+        />
       </div>
     );
   }
 
   if (step === 5) {
+    const interiorMapped = interiorFinishOptions.map((opt) => ({
+      value: opt,
+      label: isUrdu ? (opt === 'Basic' ? 'بنیادی (Basic)' : opt === 'Standard' ? 'معیاری (Standard)' : 'اعلیٰ پریمیم (Premium)') : opt
+    }));
+    const exteriorMapped = exteriorFinishOptions.map((opt) => ({
+      value: opt,
+      label: isUrdu ? (opt === 'Basic' ? 'سادہ پینٹ و موسم مزاحم' : 'پریمیم ایلیویشن و ٹائلز') : opt
+    }));
+
     return (
       <div className="grid gap-6 sm:grid-cols-2">
-        <ChoiceGrid label="Interior finish" value={form.watch('interior_finish')} options={interiorFinishOptions} onChange={(value) => form.setValue('interior_finish', value, { shouldValidate: true })} />
-        <ChoiceGrid label="Exterior finish" value={form.watch('exterior_finish')} options={exteriorFinishOptions} onChange={(value) => form.setValue('exterior_finish', value, { shouldValidate: true })} />
+        <ChoiceGridMapped
+          label={tx.estimator.interiorFinishLabel}
+          value={form.watch('interior_finish')}
+          options={interiorMapped}
+          onChange={(value) => form.setValue('interior_finish', value, { shouldValidate: true })}
+        />
+        <ChoiceGridMapped
+          label={tx.estimator.exteriorFinishLabel}
+          value={form.watch('exterior_finish')}
+          options={exteriorMapped}
+          onChange={(value) => form.setValue('exterior_finish', value, { shouldValidate: true })}
+        />
       </div>
     );
   }
 
   if (step === 6) {
+    const featuresList = [
+      { key: 'parking' as const, label: tx.estimator.parkingSpace },
+      { key: 'solar' as const, label: tx.estimator.solarPanels },
+      { key: 'smart_home' as const, label: tx.estimator.smartHome },
+      { key: 'garden' as const, label: tx.estimator.lawnGarden },
+      { key: 'swimming_pool' as const, label: tx.estimator.swimmingPool }
+    ];
+
     return (
       <div className="grid gap-3 sm:grid-cols-2">
-        {featureFields.map(([field, label]) => (
-          <Toggle key={field} label={label} checked={form.watch(field)} onChange={(value) => form.setValue(field, value, { shouldValidate: true, shouldDirty: true })} />
+        {featuresList.map((item) => (
+          <Toggle
+            key={item.key}
+            label={item.label}
+            checked={form.watch(item.key)}
+            onChange={(value) => form.setValue(item.key, value, { shouldValidate: true, shouldDirty: true })}
+          />
         ))}
       </div>
     );
   }
 
   const values = form.getValues();
-  const selectedFeatures = featureFields.filter(([field]) => values[field]).map(([, label]) => label);
-  const layoutSummary = `${values.bedrooms} Bed · ${values.bathrooms} Bath (${values.attached_baths ? 'Attached' : 'Shared'}) · ${values.kitchens} Kitchen${values.kitchens > 1 ? 's' : ''} · ${values.car_porch}`;
+  const selectedFeatures = [
+    values.parking && tx.estimator.parkingSpace,
+    values.solar && tx.estimator.solarPanels,
+    values.smart_home && tx.estimator.smartHome,
+    values.garden && tx.estimator.lawnGarden,
+    values.swimming_pool && tx.estimator.swimmingPool
+  ].filter(Boolean);
+
+  const layoutSummary = `${values.bedrooms} ${tx.estimator.bedrooms} · ${values.bathrooms} ${tx.estimator.bathrooms} · ${values.kitchens} ${tx.estimator.kitchens} · ${values.car_porch}`;
   const spaceExtras = [
-    values.drawing_dining && 'Drawing/Dining',
-    values.tv_lounge && 'TV Lounge',
-    values.powder_room && 'Powder Room',
-    values.dirty_kitchen && 'Dirty Kitchen',
-    values.servant_quarter && 'Servant Quarter',
-    values.mumty_rooftop && 'Mumty'
+    values.drawing_dining && (isUrdu ? 'ڈرائنگ/ڈائننگ' : 'Drawing/Dining'),
+    values.tv_lounge && (isUrdu ? 'ٹی وی لاؤنج' : 'TV Lounge'),
+    values.powder_room && (isUrdu ? 'پاؤڈر روم' : 'Powder Room'),
+    values.dirty_kitchen && (isUrdu ? 'ڈرٹی کچن' : 'Dirty Kitchen'),
+    values.servant_quarter && (isUrdu ? 'سرونٹ کوارٹر' : 'Servant Quarter'),
+    values.mumty_rooftop && (isUrdu ? 'ممٹی و چھت' : 'Mumty')
   ].filter(Boolean).join(', ');
 
   const reviewItems = [
-    { icon: MapPin, label: 'Location', value: `${values.city} · ${values.soil_type} soil` },
-    { icon: Ruler, label: 'Space', value: `${values.plot_size} marla · ${values.covered_area.toLocaleString()} sq ft` },
-    { icon: Bed, label: 'Room Layout', value: layoutSummary },
-    { icon: Armchair, label: 'Living Spaces', value: spaceExtras || 'Standard layout' },
-    { icon: Layers3, label: 'Structure', value: `${values.floors} floor${values.floors === 1 ? '' : 's'} · ${values.basement ? 'Basement' : 'No basement'}` },
-    { icon: Building2, label: 'Build', value: `${values.construction_type} · ${values.material_quality}` },
-    { icon: Home, label: 'Finishes', value: `${values.interior_finish} interior · ${values.exterior_finish} exterior` },
-    { icon: Sparkles, label: 'Special Features', value: selectedFeatures.length ? selectedFeatures.join(', ') : 'No additional features' }
+    { icon: MapPin, label: isUrdu ? 'مقام اور مٹی' : 'Location', value: `${values.city} · ${values.soil_type}` },
+    { icon: Ruler, label: isUrdu ? 'رقبہ و سائز' : 'Space', value: `${values.plot_size} ${tx.marla} · ${values.covered_area.toLocaleString()} ${tx.sqft}` },
+    { icon: Bed, label: isUrdu ? 'کمروں کی ترتیب' : 'Room Layout', value: layoutSummary },
+    { icon: Armchair, label: isUrdu ? 'رہائشی حصے' : 'Living Spaces', value: spaceExtras || (isUrdu ? 'معیاری لے آؤٹ' : 'Standard layout') },
+    { icon: Layers3, label: isUrdu ? 'منزلیں و بنیاد' : 'Structure', value: `${values.floors} ${isUrdu ? 'منزلیں' : 'floors'} · ${values.basement ? (isUrdu ? 'بیسمنٹ سمیت' : 'Basement') : (isUrdu ? 'بغیر بیسمنٹ' : 'No basement')}` },
+    { icon: Building2, label: isUrdu ? 'تعمیراتی پیکج' : 'Build', value: `${values.construction_type} · ${values.material_quality}` },
+    { icon: Home, label: isUrdu ? 'فنشنگ معیار' : 'Finishes', value: `${values.interior_finish} / ${values.exterior_finish}` },
+    { icon: Sparkles, label: isUrdu ? 'خصوصی سہولیات' : 'Special Features', value: selectedFeatures.length ? selectedFeatures.join(', ') : (isUrdu ? 'کوئی اضافی فیچر نہیں' : 'No additional features') }
   ];
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {reviewItems.map((item) => (
-        <div key={item.label} className="flex gap-3 rounded-lg border bg-background/60 p-4">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><item.icon className="h-4 w-4" /></span>
-          <div><p className="text-xs font-semibold text-muted-foreground">{item.label}</p><p className="mt-1 text-sm font-semibold leading-6">{item.value}</p></div>
+        <div key={item.label} className="flex gap-3 rounded-xl border bg-background/60 p-4">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <item.icon className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">{item.label}</p>
+            <p className="mt-1 text-sm font-semibold leading-6">{item.value}</p>
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function ChoiceGrid({ label, value, options, onChange }: { label: string; value: string; options: readonly string[]; onChange: (value: string) => void }) {
+function ChoiceGridMapped({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
   return (
     <fieldset>
       <legend className="mb-3 text-sm font-medium">{label}</legend>
       <div className="grid gap-2">
         {options.map((option) => {
-          const selected = option === value;
+          const selected = option.value === value;
           return (
             <button
-              key={option}
+              key={option.value}
               type="button"
-              onClick={() => onChange(option)}
-              className={`focus-ring flex h-12 items-center justify-between rounded-lg border px-4 text-left text-sm font-semibold ${selected ? 'border-primary bg-primary/10 text-primary' : 'bg-background hover:border-primary/40'}`}
+              onClick={() => onChange(option.value)}
+              className={`focus-ring flex h-12 items-center justify-between rounded-lg border px-4 text-left text-sm font-semibold transition-all ${
+                selected ? 'border-emerald-600 bg-emerald-50/20 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-background hover:border-emerald-500/40'
+              }`}
             >
-              {option}{selected && <Check className="h-4 w-4" />}
+              <span>{option.label}</span>
+              {selected && <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
             </button>
           );
         })}
@@ -737,25 +961,45 @@ function ChoiceGrid({ label, value, options, onChange }: { label: string; value:
   );
 }
 
-function AiLoadingScreen({ progress }: { progress: number }) {
-  const status = progress < 35 ? 'Reading your project details' : progress < 70 ? 'Calculating construction costs' : progress < 96 ? 'Preparing your recommendations' : 'Estimate ready';
+function AiLoadingScreen({ progress, isUrdu }: { progress: number; isUrdu: boolean }) {
+  const status = isUrdu
+    ? progress < 35
+      ? 'منصوبے کی تمام تفصیلات کا جائزہ لیا جا رہا ہے'
+      : progress < 70
+      ? 'سیمنٹ، سریہ، اینٹ اور لیبر کی موجودہ لاگت کا حساب لگایا جا رہا ہے'
+      : progress < 96
+      ? 'بہترین تصدیق شدہ ٹھیکیداروں اور ریٹس کی رپورٹ تیار کی جا رہی ہے'
+      : 'تخمینہ مکمل تیار ہے!'
+    : progress < 35
+    ? 'Reading your project details'
+    : progress < 70
+    ? 'Calculating construction costs based on current rates'
+    : progress < 96
+    ? 'Preparing your recommendations and contractor matches'
+    : 'Estimate ready';
+
   return (
     <div className="mx-auto grid min-h-[70vh] max-w-3xl place-items-center px-4 text-center">
       <div className="w-full">
         <div className="relative mx-auto mb-8 grid h-24 w-24 place-items-center">
-          <motion.div className="absolute inset-0 rounded-full border border-primary/30" animate={{ scale: [1, 1.22, 1], opacity: [0.7, 0, 0.7] }} transition={{ repeat: Infinity, duration: 2.2 }} />
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-primary text-primary-foreground shadow-glass">
+          <motion.div className="absolute inset-0 rounded-full border border-emerald-500/30" animate={{ scale: [1, 1.22, 1], opacity: [0.7, 0, 0.7] }} transition={{ repeat: Infinity, duration: 2.2 }} />
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-600 text-white shadow-glass">
             <WandSparkles className="h-8 w-8" />
           </div>
         </div>
-        <p className="text-xs font-bold uppercase tracking-widest text-primary">BuildWise AI</p>
-        <h1 className="mt-3 text-3xl font-bold sm:text-4xl">Building your cost estimate</h1>
+        <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">BuildWise AI</p>
+        <h1 className="mt-3 text-2xl sm:text-4xl font-bold">
+          {isUrdu ? 'تعمیراتی لاگت کا تخمینہ تیار ہو رہا ہے' : 'Building your cost estimate'}
+        </h1>
         <p className="mt-3 text-muted-foreground">{status}</p>
         <div className="mx-auto mt-9 max-w-xl">
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <motion.div className="h-full rounded-full bg-primary" animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: 'easeOut' }} />
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+            <motion.div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500" animate={{ width: `${progress}%` }} transition={{ duration: 0.4, ease: 'easeOut' }} />
           </div>
-          <div className="mt-3 flex justify-between text-xs font-semibold text-muted-foreground"><span>Analyzing</span><span>{progress}%</span></div>
+          <div className="mt-3 flex justify-between text-xs font-semibold text-muted-foreground">
+            <span>{isUrdu ? 'تجزیہ و حساب' : 'Analyzing'}</span>
+            <span>{progress}%</span>
+          </div>
         </div>
       </div>
     </div>
