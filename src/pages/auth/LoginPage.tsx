@@ -76,19 +76,29 @@ export function AuthFrame({
   const { tx } = useLanguage();
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_34%),linear-gradient(135deg,hsl(var(--background)),hsl(var(--muted)))] p-4">
-      <section className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-xl border border-border/80">
-        <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Building2 className="h-5 w-5" />
+    <main className="relative grid min-h-screen place-items-center bg-background p-4"
+      style={{
+        backgroundImage: `
+          repeating-linear-gradient(0deg, transparent, transparent 39px, hsl(var(--border)) 39px, hsl(var(--border)) 40px),
+          repeating-linear-gradient(90deg, transparent, transparent 39px, hsl(var(--border)) 39px, hsl(var(--border)) 40px)
+        `,
+        backgroundSize: '40px 40px'
+      }}
+    >
+      <section className="relative w-full max-w-md border-2 border-foreground/15 bg-card shadow-[6px_6px_0px_hsl(var(--primary)/0.2)] p-6">
+        {/* top rust accent bar */}
+        <div className="absolute left-0 top-0 h-1 w-full bg-primary" />
+        <div className="mb-7 mt-2 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5 font-black text-base uppercase tracking-widest">
+            <span className="grid h-9 w-9 place-items-center bg-primary text-primary-foreground">
+              <Building2 className="h-4 w-4" />
             </span>
             <span>{tx.brandName}</span>
           </Link>
           <LanguageToggle />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mb-6 mt-2 text-sm text-muted-foreground leading-relaxed">{subtitle}</p>
+        <h1 className="text-3xl font-black tracking-tight leading-tight">{title}</h1>
+        <p className="mb-7 mt-2 text-sm text-muted-foreground leading-relaxed">{subtitle}</p>
         {children}
       </section>
     </main>
