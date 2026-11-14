@@ -34,6 +34,20 @@ export type AiEstimate = {
   risk_factors?: string[];
   material_quality_recommendation?: string;
   pricing_basis?: string;
+  built_house_comparison?: {
+    market_ready_house_est: number;
+    self_build_savings: number;
+    self_build_savings_percentage: number;
+    comparison_note: string;
+  };
+  current_market_rates?: {
+    cement_bag_pkr: string;
+    steel_per_ton_pkr: string;
+    bricks_per_thousand_pkr: string;
+    sand_crush_per_cft_pkr: string;
+    tiles_per_sqft_pkr: string;
+    labour_rate_per_sqft_pkr: string;
+  };
 };
 
 export type Profile = {

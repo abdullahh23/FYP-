@@ -29,6 +29,20 @@ type Estimate = {
   material_quality_recommendation: string;
   risk_factors: string[];
   pricing_basis: string;
+  built_house_comparison?: {
+    market_ready_house_est: number;
+    self_build_savings: number;
+    self_build_savings_percentage: number;
+    comparison_note: string;
+  };
+  current_market_rates?: {
+    cement_bag_pkr: string;
+    steel_per_ton_pkr: string;
+    bricks_per_thousand_pkr: string;
+    sand_crush_per_cft_pkr: string;
+    tiles_per_sqft_pkr: string;
+    labour_rate_per_sqft_pkr: string;
+  };
 };
 
 function json(body: unknown, status = 200) {
@@ -41,9 +55,20 @@ function json(body: unknown, status = 200) {
 function constructPrompt(project: Record<string, unknown>) {
   const coveredArea = Number(project.covered_area) || 2000;
   const quality = String(project.material_quality || 'Standard').toLowerCase();
-  const ratePerSqft = quality.includes('luxury') || quality.includes('a+') ? 8500
+  const city = String(project.city || 'Lahore');
+  const cityLower = city.toLowerCase();
+
+  // Regional city cost multiplier
+  let cityFactor = 1.0;
+  if (cityLower.includes('islamabad') || cityLower.includes('rawalpindi')) cityFactor = 1.05;
+  else if (cityLower.includes('karachi')) cityFactor = 1.04;
+  else if (cityLower.includes('peshawar') || cityLower.includes('quetta')) cityFactor = 1.02;
+  else if (cityLower.includes('multan') || cityLower.includes('faisalabad')) cityFactor = 0.98;
+
+  const baseRatePerSqft = quality.includes('luxury') || quality.includes('a+') ? 8500
     : quality.includes('premium') || quality.includes('a') ? 6800
     : quality.includes('economy') ? 4200 : 5400;
+  const ratePerSqft = Math.round(baseRatePerSqft * cityFactor);
   const targetTotal = coveredArea * ratePerSqft;
 
   const tagsList = Array.isArray(project.tags) ? project.tags.join(', ') : 'Standard layout';
@@ -53,7 +78,7 @@ Generate an authentic, highly accurate, itemized construction cost estimate in P
 
 PROJECT DETAILS:
 - Title: ${project.title}
-- City: ${project.city || 'Lahore'}
+- City: ${city} (City adjustment index: ${cityFactor}x)
 - Covered Area: ${coveredArea} sq ft
 - Plot Size: ${project.plot_size || 5} Marla
 - Floors: ${project.floors || 2}
@@ -63,9 +88,19 @@ PROJECT DETAILS:
 - Room Layout & Spaces: ${tagsList}
 - Features: Parking=${project.parking}, Solar=${project.solar}, SmartHome=${project.smart_home}, Garden=${project.garden}, Pool=${project.swimming_pool}
 
-PAKISTANI 2025-2026 CONSTRUCTION BENCHMARKS:
-Target Estimated Total for this size, layout and quality: ~PKR ${targetTotal.toLocaleString()}
-Take into account the number of bathrooms (sanitary/tiles per bath), kitchens on each floor (cabinets/granite/plumbing), attached baths, and living spaces specified.
+PAKISTANI 2025-2026 GROUND MARKET BENCHMARKS IN ${city.toUpperCase()}:
+- Cement: Rs. 1,390 - 1,460 per 50kg bag (Bestway, Lucky, Maple Leaf, Fauji)
+- Steel Rebar (Grade 60): Rs. 262,000 - 272,000 per ton (~Rs. 265/kg deformed bar - Mughal, Amreli, Model)
+- Bricks: Rs. 13,500 - 15,500 per 1,000 Class-1 Awwal kiln bricks (or Rs. 65-75/block for Karachi concrete masonry)
+- Sand & Crush: Chenab/Lawrencepur sand Rs. 55-85/cft; Margalla/Sargodha machine crush Rs. 120-145/cft
+- Porcelain Tiles: Master / Stile Grade-A porcelain Rs. 230 - 350 / sq ft
+- Labour Contract: Grey structure Rs. 480 - 640 / sq ft; Complete turnkey labour Rs. 980 - 1,300 / sq ft
+
+READY HOUSE BENCHMARK COMPARISON:
+- A developer-built, ready-to-move house in ${city} has an added 18% - 24% developer margin and 2% agent commission.
+- Target Direct Self-Build Total: ~PKR ${targetTotal.toLocaleString()}
+- Ready-to-Move Market Equivalent: ~PKR ${Math.round(targetTotal * 1.22).toLocaleString()} (Homeowner saves ~20% by building directly!)
+
 Category Guidelines (all values in realistic full PKR amounts, NOT placeholder single digits):
 1. Structure (Grey structure - cement, steel rebar, bricks, sand, crush): ~38% - 44% of total (~PKR ${Math.round(targetTotal * 0.40).toLocaleString()})
 2. Foundation & Excavation: ~8% - 12% of total (~PKR ${Math.round(targetTotal * 0.10).toLocaleString()})
@@ -206,6 +241,31 @@ function parseEstimate(content: string, project?: Record<string, unknown>): Esti
   if (parsed.confidence < 60 || parsed.confidence > 98) {
     parsed.confidence = 88;
   }
+
+  // Calculate comparison against market ready-built houses
+  const readyMarkup = 1.22; // ~22% developer & dealer markup on commercial ready-built houses in Pakistan
+  const readyMin = Math.round(parsed.total_estimate_min * readyMarkup);
+  const readyMax = Math.round(parsed.total_estimate_max * readyMarkup);
+  const readyMidpoint = (readyMin + readyMax) / 2;
+  const selfSavings = Math.round(readyMidpoint - total);
+  const savingsPct = Math.round((selfSavings / readyMidpoint) * 100);
+
+  const cityName = String(project?.city || 'Pakistan');
+  parsed.built_house_comparison = {
+    market_ready_house_est: readyMidpoint,
+    self_build_savings: selfSavings,
+    self_build_savings_percentage: savingsPct,
+    comparison_note: `Building directly via BuildWise saves approx. PKR ${selfSavings.toLocaleString()} (~${savingsPct}%) compared to purchasing a developer-built ready house in ${cityName}, where developer profits (18-22%) and broker commissions are added.`
+  };
+
+  parsed.current_market_rates = {
+    cement_bag_pkr: 'Rs. 1,390 – 1,460 / 50kg bag',
+    steel_per_ton_pkr: 'Rs. 262,000 – 272,000 / ton (Grade-60)',
+    bricks_per_thousand_pkr: cityName.toLowerCase().includes('karachi') ? 'Rs. 65 – 75 / block' : 'Rs. 13,800 – 15,200 / 1,000 bricks',
+    sand_crush_per_cft_pkr: 'Sand: Rs. 58-75/cft | Crush: Rs. 120-140/cft',
+    tiles_per_sqft_pkr: 'Rs. 230 – 350 / sq ft (Grade-A Porcelain)',
+    labour_rate_per_sqft_pkr: 'Grey: Rs. 480-620/sqft | Turnkey: Rs. 980-1,280/sqft'
+  };
 
   return parsed as Estimate;
 }

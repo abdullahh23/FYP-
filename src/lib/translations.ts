@@ -207,6 +207,13 @@ export interface Translations {
     viewResults: string;
     noProjectsYet: string;
     deleteConfirm: string;
+    readyHouseComparison: string;
+    readyHouseMarketVal: string;
+    selfBuildCost: string;
+    selfBuildSavings: string;
+    readyHouseExplanation: string;
+    marketRatesTitle: string;
+    marketRatesDesc: string;
   };
 
   // Contractor & Quotations
@@ -459,7 +466,14 @@ export const translations: Record<Language, Translations> = {
       requestQuotes: 'Request Quotations from Contractors',
       viewResults: 'View Full Analysis & Breakdown',
       noProjectsYet: 'You haven\'t created any projects yet. Start with your first house estimate!',
-      deleteConfirm: 'Are you sure you want to delete this project?'
+      deleteConfirm: 'Are you sure you want to delete this project?',
+      readyHouseComparison: 'Self-Build vs Ready-Made House Comparison',
+      readyHouseMarketVal: 'Market Ready House Cost',
+      selfBuildCost: 'BuildWise Self-Build Cost',
+      selfBuildSavings: 'Direct Homeowner Savings',
+      readyHouseExplanation: 'Buying a ready-built house incurs an 18-24% developer markup and 2% dealer brokerage fee. Building with BuildWise saves you substantial capital with 100% control over Grade-A steel, cement ratios, and plumbing quality.',
+      marketRatesTitle: 'Live Ground Market Rates',
+      marketRatesDesc: 'Verified current market benchmarks for construction materials and labor in your area'
     },
 
     contractor: {
@@ -708,7 +722,14 @@ export const translations: Record<Language, Translations> = {
       requestQuotes: 'ٹھیکیداروں سے کوٹیشنز طلب کریں',
       viewResults: 'مکمل تفصیلی تجزیہ دیکھیں',
       noProjectsYet: 'ابھی تک آپ نے کوئی پروجیکٹ نہیں بنایا۔ اپنے پہلے گھر کا تخمینہ لگائیں!',
-      deleteConfirm: 'کیا آپ واقعی اس پروجیکٹ کو حذف کرنا چاہتے ہیں؟'
+      deleteConfirm: 'کیا آپ واقعی اس پروجیکٹ کو حذف کرنا چاہتے ہیں؟',
+      readyHouseComparison: 'تیار شدہ گھر بمقابلہ خود تعمیر کا تقابلی جائزہ',
+      readyHouseMarketVal: 'کمرشل تیار گھر کی مارکیٹ لاگت',
+      selfBuildCost: 'بلڈ وائز خود تعمیراتی لاگت',
+      selfBuildSavings: 'آپ کی خالص بچت',
+      readyHouseExplanation: 'مارکیٹ میں تیار شدہ گھروں پر بلڈرز ۱۸ سے ۲۴ فیصد منافع اور ۲ فیصد ڈیلر کمیشن شامل کرتے ہیں۔ خود تعمیر کرنے سے آپ خطیر رقم بچاتے ہیں اور پوشیدہ میٹریل (سریہ گریڈ، سیمنٹ تناسب) پر مکمل کنٹرول حاصل کرتے ہیں۔',
+      marketRatesTitle: 'موجودہ زمینی مارکیٹ ریٹس',
+      marketRatesDesc: 'آپ کے شہر میں بنیادی تعمیراتی سامان اور کاریگروں کے تصدیق شدہ نرخ'
     },
 
     contractor: {

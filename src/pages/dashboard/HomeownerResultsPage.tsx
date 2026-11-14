@@ -19,10 +19,16 @@ import {
   Send,
   Sparkles,
   Star,
-  TrendingUp
+  TrendingUp,
+  ShieldCheck,
+  Scale,
+  Hammer,
+  Layers,
+  Coins
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getCityGroundRates, calculateReadyHouseBenchmark } from '../../lib/marketRates';
 import {
   acceptQuotation,
   getProject,
@@ -196,41 +202,41 @@ export function HomeownerResultsPage() {
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border bg-card shadow-panel">
-        <div className="border-b bg-emerald-500/[0.06] px-5 py-7 sm:px-8 sm:py-9">
+      <section className="overflow-hidden border-2 border-border bg-card shadow-md">
+        <div className="border-b-2 border-border bg-muted/40 px-5 py-7 sm:px-8 sm:py-9">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+              <p className="text-xs font-black uppercase tracking-widest text-primary">
                 {isUrdu ? 'پروجیکٹ کی لاگت کا تخمینہ' : 'Project estimate'}
               </p>
-              <h1 className="mt-3 text-2xl sm:text-4xl font-bold">{currentProject.title}</h1>
-              <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 text-emerald-600" /> {currentProject.city} · {currentProject.construction_type}
+              <h1 className="mt-3 text-2xl sm:text-4xl font-black tracking-tight">{currentProject.title}</h1>
+              <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground font-semibold">
+                <MapPin className="h-4 w-4 text-primary" /> {currentProject.city} · {currentProject.construction_type}
               </p>
             </div>
             {estimate && (
-              <div className="min-w-[280px] rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 p-5 text-white shadow-md">
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-90">{tx.estimator.totalEstimatedCost}</p>
-                <p className="mt-2 text-2xl font-black sm:text-3xl">{formatCurrency(estimate.total_estimate_min)}</p>
-                <p className="mt-1 text-sm opacity-90">{isUrdu ? 'تا' : 'to'} {formatCurrency(estimate.total_estimate_max)}</p>
+              <div className="min-w-[280px] border-2 border-primary bg-primary p-5 text-primary-foreground shadow-[4px_4px_0px_hsl(var(--foreground)/0.2)]">
+                <p className="text-xs font-black uppercase tracking-widest opacity-80">{tx.estimator.totalEstimatedCost}</p>
+                <p className="mt-2 text-2xl font-black sm:text-3xl tracking-tight">{formatCurrency(estimate.total_estimate_min)}</p>
+                <p className="mt-1 text-sm font-bold opacity-90">{isUrdu ? 'تا' : 'to'} {formatCurrency(estimate.total_estimate_max)}</p>
               </div>
             )}
           </div>
         </div>
-        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+        <div className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           <Metric icon={Ruler} label={isUrdu ? 'کورڈ ایریا' : 'Covered area'} value={`${currentProject.covered_area.toLocaleString()} ${tx.sqft}`} />
           <Metric icon={Building2} label={isUrdu ? 'پلاٹ کا سائز' : 'Plot size'} value={`${currentProject.plot_size} ${tx.marla}`} />
           <Metric icon={Home} label={isUrdu ? 'منزلیں' : 'Floors'} value={`${currentProject.floors} ${isUrdu ? 'منزل' : 'floors'}`} />
           <Metric icon={Sparkles} label={isUrdu ? 'میٹریل کوالٹی' : 'Material quality'} value={currentProject.material_quality} />
         </div>
         {currentProject.tags && currentProject.tags.length > 0 && (
-          <div className="border-t bg-muted/20 px-5 py-3 sm:px-8">
+          <div className="border-t-2 border-border bg-muted/20 px-5 py-3 sm:px-8">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground mr-1">
+              <span className="text-xs font-bold text-muted-foreground mr-1 uppercase tracking-wider">
                 {isUrdu ? 'پروجیکٹ کے مخصوص فیچرز:' : 'Project Layout & Features:'}
               </span>
               {currentProject.tags.map((tag) => (
-                <span key={tag} className="inline-flex items-center rounded-md bg-card px-2.5 py-1 text-xs font-medium border shadow-2xs">
+                <span key={tag} className="inline-flex items-center border border-border bg-card px-2.5 py-1 text-xs font-bold shadow-2xs">
                   {tag}
                 </span>
               ))}
@@ -458,20 +464,23 @@ export function HomeownerResultsPage() {
 
 function EstimateAnalytics({ project, isUrdu, tx }: { project: Project; isUrdu: boolean; tx: ReturnType<typeof useLanguage>['tx'] }) {
   const estimate = project.ai_estimate_json!;
+  const benchmark = calculateReadyHouseBenchmark(estimate.total_estimate_min, estimate.total_estimate_max);
+  const cityRates = getCityGroundRates(project.city);
+
   const costs = [
-    { label: isUrdu ? 'زمین کی کھدائی و تیاری' : 'Land preparation', value: estimate.land_preparation_cost, color: 'bg-cyan-500' },
-    { label: isUrdu ? 'بنیادیں' : 'Foundation', value: estimate.foundation_cost ?? 0, color: 'bg-teal-500' },
-    { label: isUrdu ? 'گرے اسٹرکچر و چنائی' : 'Structure', value: estimate.structure_cost, color: 'bg-emerald-600' },
-    { label: isUrdu ? 'چھت کا لنٹر' : 'Roofing', value: estimate.roofing_cost ?? 0, color: 'bg-indigo-500' },
-    { label: isUrdu ? 'بجلی کی وائرنگ' : 'Electrical', value: estimate.electrical_cost, color: 'bg-amber-500' },
-    { label: isUrdu ? 'پلمبنگ و سینیٹری' : 'Plumbing', value: estimate.plumbing_cost, color: 'bg-blue-500' },
-    { label: isUrdu ? 'رنگ و روغن (پینٹ)' : 'Paint', value: estimate.paint_cost ?? 0, color: 'bg-rose-500' },
-    { label: isUrdu ? 'ٹائلز و ماربل' : 'Tiles', value: estimate.tiles_cost ?? 0, color: 'bg-orange-500' },
-    { label: isUrdu ? 'دروازے اور کھڑکیاں' : 'Doors & Windows', value: estimate.doors_windows_cost ?? 0, color: 'bg-violet-500' },
-    { label: isUrdu ? 'فنشنگ' : 'Finishing', value: estimate.finishing_cost, color: 'bg-emerald-500' },
-    { label: isUrdu ? 'مزدوری و کاریگر' : 'Labour cost', value: estimate.labour_cost ?? 0, color: 'bg-purple-500' },
-    { label: isUrdu ? 'بنیادی میٹریل' : 'Material cost', value: estimate.material_cost ?? 0, color: 'bg-sky-500' },
-    { label: isUrdu ? 'متفرق اخراجات' : 'Miscellaneous', value: estimate.miscellaneous_cost ?? 0, color: 'bg-slate-500' }
+    { label: isUrdu ? 'زمین کی کھدائی و تیاری' : 'Land preparation', value: estimate.land_preparation_cost, color: 'bg-primary/70' },
+    { label: isUrdu ? 'بنیادیں' : 'Foundation', value: estimate.foundation_cost ?? 0, color: 'bg-primary/80' },
+    { label: isUrdu ? 'گرے اسٹرکچر و چنائی' : 'Structure', value: estimate.structure_cost, color: 'bg-primary' },
+    { label: isUrdu ? 'چھت کا لنٹر' : 'Roofing', value: estimate.roofing_cost ?? 0, color: 'bg-accent' },
+    { label: isUrdu ? 'بجلی کی وائرنگ' : 'Electrical', value: estimate.electrical_cost, color: 'bg-amber-600' },
+    { label: isUrdu ? 'پلمبنگ و سینیٹری' : 'Plumbing', value: estimate.plumbing_cost, color: 'bg-blue-600' },
+    { label: isUrdu ? 'رنگ و روغن (پینٹ)' : 'Paint', value: estimate.paint_cost ?? 0, color: 'bg-rose-600' },
+    { label: isUrdu ? 'ٹائلز و ماربل' : 'Tiles', value: estimate.tiles_cost ?? 0, color: 'bg-orange-600' },
+    { label: isUrdu ? 'دروازے اور کھڑکیاں' : 'Doors & Windows', value: estimate.doors_windows_cost ?? 0, color: 'bg-stone-600' },
+    { label: isUrdu ? 'فنشنگ' : 'Finishing', value: estimate.finishing_cost, color: 'bg-accent/90' },
+    { label: isUrdu ? 'مزدوری و کاریگر' : 'Labour cost', value: estimate.labour_cost ?? 0, color: 'bg-primary' },
+    { label: isUrdu ? 'بنیادی میٹریل' : 'Material cost', value: estimate.material_cost ?? 0, color: 'bg-foreground/80' },
+    { label: isUrdu ? 'متفرق اخراجات' : 'Miscellaneous', value: estimate.miscellaneous_cost ?? 0, color: 'bg-muted-foreground' }
   ].filter((cost) => cost.value > 0);
 
   const max = Math.max(...costs.map((cost) => cost.value));
@@ -491,105 +500,293 @@ function EstimateAnalytics({ project, isUrdu, tx }: { project: Project; isUrdu: 
     'Completed': 'مکمل'
   };
 
+  const readyMidpoint = (benchmark.readyHouseEstimateMin + benchmark.readyHouseEstimateMax) / 2;
+  const savingsMidpoint = readyMidpoint - midpoint;
+
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-      <div className="rounded-2xl border bg-card p-5 shadow-panel sm:p-6">
-        <SectionHeading
-          eyebrow={isUrdu ? 'اخراجات کی تقسیم' : 'Cost composition'}
-          title={isUrdu ? 'آپ کا بجٹ کہاں خرچ ہوتا ہے' : 'Where your budget goes'}
-          description={isUrdu ? 'اے آئی کے مطابق مختلف کیٹیگریز میں اخراجات کی تفصیلی فیصد اور رقم۔' : 'A category-by-category view of the AI estimate.'}
-        />
-        <div className="mt-7 grid gap-5">
-          {costs.map((cost) => (
-            <div key={cost.label}>
-              <div className="mb-2 flex items-center justify-between gap-4 text-sm">
-                <span className="font-semibold">{cost.label}</span>
-                <span className="text-muted-foreground font-mono">{formatCurrency(cost.value)}</span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                <div className={`h-full rounded-full ${cost.color}`} style={{ width: `${Math.max(5, (cost.value / max) * 100)}%` }} />
-              </div>
+    <div className="space-y-6">
+
+      {/* ── Ready-Made House vs Self-Build Benchmark Card ── */}
+      <section className="border-2 border-border bg-card p-6 shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-border pb-4">
+          <div>
+            <div className="inline-flex items-center gap-2 border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-primary mb-2">
+              <Scale className="h-3.5 w-3.5" />
+              {tx.estimator.readyHouseComparison}
             </div>
-          ))}
-        </div>
-      </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+              {isUrdu ? 'مارکیٹ میں تیار شدہ گھر بمقابلہ خود تعمیراتی بچت' : 'Self-Build vs Ready House Savings Benchmark'}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground leading-relaxed max-w-3xl">
+              {tx.estimator.readyHouseExplanation}
+            </p>
+          </div>
 
-      <div className="grid gap-6">
-        <div className="rounded-2xl border bg-card p-5 shadow-panel sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-            {isUrdu ? 'متوقع رینج' : 'Estimate range'}
-          </p>
-          <div className="mt-5 flex items-end justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{isUrdu ? 'اوسط متوقع لاگت' : 'Midpoint'}</p>
-            <p className="text-xl font-bold font-mono">{formatCurrency(midpoint)}</p>
+          <div className="border-2 border-primary bg-primary px-5 py-3 text-primary-foreground text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-80 block">
+              {isUrdu ? 'کل متوقع بچت' : 'Estimated Direct Savings'}
+            </span>
+            <span className="text-2xl font-black tracking-tight">
+              ~{benchmark.savingsPercentage}% {isUrdu ? 'کم لاگت' : 'Savings'}
+            </span>
           </div>
-          <div className="relative mt-6 h-3 rounded-full bg-muted">
-            <div className="absolute inset-y-0 left-[10%] right-[10%] rounded-full bg-emerald-500/30" />
-            <div className="absolute left-1/2 top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-600" />
-          </div>
-          <div className="mt-3 flex justify-between text-xs font-semibold text-muted-foreground">
-            <span>{formatCurrency(estimate.total_estimate_min)}</span>
-            <span>{formatCurrency(estimate.total_estimate_max)}</span>
-          </div>
-          <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
-            {isUrdu ? 'فرق / رینج سپریڈ:' : 'Range spread:'} {formatCurrency(spread)}
-          </p>
         </div>
 
-        <div className="rounded-2xl border bg-card p-5 shadow-panel sm:p-6">
-          <p className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400">
-            <Bot className="h-4 w-4" /> {isUrdu ? 'اے آئی تجزیہ اور خلاصہ' : 'AI summary'}
+        {/* 3 Metrics Comparison Grid */}
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {/* Box 1: Self Build Cost */}
+          <div className="border-2 border-border bg-background p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+              {tx.estimator.selfBuildCost}
+            </p>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-primary tracking-tight">
+              {formatCurrency(midpoint)}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground font-semibold">
+              {isUrdu
+                ? 'براہ راست میٹریل خریداری اور تصدیق شدہ کاریگر ٹھیکہ (بغیر مڈل مین منافع)'
+                : 'Direct verified materials & labour cost without developer markups'}
+            </p>
+          </div>
+
+          {/* Box 2: Ready Market House Value */}
+          <div className="border-2 border-border bg-background p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+              {tx.estimator.readyHouseMarketVal}
+            </p>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+              {formatCurrency(readyMidpoint)}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground font-semibold">
+              {isUrdu
+                ? 'کمرشل بلڈر کا منافع (~20%) اور پراپرٹی ڈیلر کمیشن (~2%) شامل'
+                : 'Commercial developer margin (18-22%) + agent commission added'}
+            </p>
+          </div>
+
+          {/* Box 3: Total Savings */}
+          <div className="border-2 border-primary bg-primary/10 p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-primary">
+              {tx.estimator.selfBuildSavings}
+            </p>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-primary tracking-tight">
+              ~{formatCurrency(savingsMidpoint)}
+            </p>
+            <p className="mt-2 text-xs font-bold text-primary">
+              {isUrdu
+                ? `آپ خود تعمیر کروا کر ~${formatCurrency(savingsMidpoint)} بچا سکتے ہیں!`
+                : `You save approx. ${formatCurrency(savingsMidpoint)} by direct building!`}
+            </p>
+          </div>
+        </div>
+
+        {/* Quality note */}
+        <div className="mt-5 border-l-4 border-primary bg-muted/40 p-4 text-xs font-medium text-muted-foreground leading-relaxed">
+          <p className="font-bold text-foreground mb-1">
+            {isUrdu ? '🛡️ میٹریل کوالٹی کا نکتہ:' : '🛡️ Concealed Quality Advantage:'}
           </p>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">{estimate.explanation}</p>
-          {estimate.pricing_basis && (
-            <p className="mt-4 border-t pt-3 text-xs italic text-muted-foreground">{estimate.pricing_basis}</p>
+          {isUrdu ? benchmark.qualityControlNoteUr : benchmark.qualityControlNoteEn}
+        </div>
+      </section>
+
+      {/* ── Verified Ground Market Rates in City ── */}
+      <section className="border-2 border-border bg-card p-6 shadow-md">
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 border border-foreground/20 bg-muted px-3 py-1 text-xs font-black uppercase tracking-widest text-foreground mb-2">
+            <Hammer className="h-3.5 w-3.5 text-primary" />
+            {tx.estimator.marketRatesTitle} — {project.city}
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+            {isUrdu ? `${project.city} میں موجودہ زمینی مارکیٹ ریٹس (2025-2026)` : `Current Ground Material & Labour Benchmarks in ${project.city}`}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {tx.estimator.marketRatesDesc}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Cement */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'سیمنٹ (۵۰ کلو بوری)' : 'Cement (50kg Bag)'}
+              </span>
+              <span className="text-[10px] font-bold text-primary border border-primary/30 px-1.5 py-0.5">
+                {cityRates.cement.trend}
+              </span>
+            </div>
+            <p className="mt-2 text-lg font-black text-foreground">{cityRates.cement.pricePerBag}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{cityRates.cement.brands}</p>
+          </div>
+
+          {/* Steel */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'سریہ ۶۰ گریڈ ڈیفارمڈ' : 'Grade-60 Steel Rebar'}
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground border border-border px-1.5 py-0.5">
+                ASTM A615
+              </span>
+            </div>
+            <p className="mt-2 text-lg font-black text-foreground">{cityRates.steel.pricePerKg}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{cityRates.steel.pricePerTon} · {cityRates.steel.brands}</p>
+          </div>
+
+          {/* Bricks */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'اینٹ / چنائی میٹریل' : 'Bricks / Masonry Units'}
+              </span>
+            </div>
+            <p className="mt-2 text-lg font-black text-foreground">{cityRates.bricks.pricePerThousand}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{cityRates.bricks.type}</p>
+          </div>
+
+          {/* Sand & Crush */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'ریت و مارگلہ بجری' : 'River Sand & Crush'}
+              </span>
+            </div>
+            <p className="mt-2 text-sm font-black text-foreground">{cityRates.sandCrush.sandPerCft}</p>
+            <p className="text-sm font-black text-foreground">{cityRates.sandCrush.crushPerCft}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{cityRates.sandCrush.source}</p>
+          </div>
+
+          {/* Tiles */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'پورسلین ٹائلز و ماربل' : 'Porcelain Floor Tiles'}
+              </span>
+            </div>
+            <p className="mt-2 text-lg font-black text-foreground">{cityRates.tiles.rangePerSqft}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{cityRates.tiles.popularBrands}</p>
+          </div>
+
+          {/* Labour */}
+          <div className="border border-border bg-background p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                {isUrdu ? 'لیبر و کاریگر ریٹ' : 'Labour & Mason Rates'}
+              </span>
+            </div>
+            <p className="mt-2 text-sm font-black text-foreground">
+              {isUrdu ? 'گرے اسٹرکچر:' : 'Grey:'} {cityRates.labour.greyStructurePerSqft}
+            </p>
+            <p className="text-sm font-black text-foreground">
+              {isUrdu ? 'کل فنشنگ:' : 'Turnkey:'} {cityRates.labour.fullTurnkeyPerSqft}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isUrdu ? 'مستری' : 'Mason'}: {cityRates.labour.masonDaily} · {isUrdu ? 'مزدور' : 'Helper'}: {cityRates.labour.mazdoorDaily}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Itemized Breakdown & Analytics ── */}
+      <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="border-2 border-border bg-card p-5 sm:p-6 shadow-sm">
+          <SectionHeading
+            eyebrow={isUrdu ? 'اخراجات کی تقسیم' : 'Cost composition'}
+            title={isUrdu ? 'آپ کا بجٹ کہاں خرچ ہوتا ہے' : 'Where your budget goes'}
+            description={isUrdu ? 'اے آئی کے مطابق مختلف کیٹیگریز میں اخراجات کی تفصیلی فیصد اور رقم۔' : 'A category-by-category view of the AI estimate.'}
+          />
+          <div className="mt-7 grid gap-5">
+            {costs.map((cost) => (
+              <div key={cost.label}>
+                <div className="mb-2 flex items-center justify-between gap-4 text-sm">
+                  <span className="font-bold">{cost.label}</span>
+                  <span className="text-foreground font-mono font-bold">{formatCurrency(cost.value)}</span>
+                </div>
+                <div className="h-2 overflow-hidden bg-muted">
+                  <div className={`h-full ${cost.color}`} style={{ width: `${Math.max(5, (cost.value / max) * 100)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-6">
+          <div className="border-2 border-border bg-card p-5 sm:p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-widest text-primary">
+              {isUrdu ? 'متوقع رینج' : 'Estimate range'}
+            </p>
+            <div className="mt-5 flex items-end justify-between gap-3">
+              <p className="text-sm font-bold text-muted-foreground">{isUrdu ? 'اوسط متوقع لاگت' : 'Midpoint'}</p>
+              <p className="text-xl font-black font-mono">{formatCurrency(midpoint)}</p>
+            </div>
+            <div className="relative mt-6 h-2 bg-muted">
+              <div className="absolute inset-y-0 left-[10%] right-[10%] bg-primary/40" />
+              <div className="absolute left-1/2 top-1/2 h-4 w-1.5 -translate-x-1/2 -translate-y-1/2 bg-primary" />
+            </div>
+            <div className="mt-3 flex justify-between text-xs font-bold text-muted-foreground">
+              <span>{formatCurrency(estimate.total_estimate_min)}</span>
+              <span>{formatCurrency(estimate.total_estimate_max)}</span>
+            </div>
+            <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground font-semibold">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              {isUrdu ? 'فرق / رینج سپریڈ:' : 'Range spread:'} {formatCurrency(spread)}
+            </p>
+          </div>
+
+          <div className="border-2 border-border bg-card p-5 sm:p-6 shadow-sm">
+            <p className="flex items-center gap-2 text-sm font-black text-primary uppercase tracking-wide">
+              <Bot className="h-4 w-4" /> {isUrdu ? 'اے آئی تجزیہ اور خلاصہ' : 'AI summary'}
+            </p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">{estimate.explanation}</p>
+            {estimate.pricing_basis && (
+              <p className="mt-4 border-t border-border pt-3 text-xs italic text-muted-foreground">{estimate.pricing_basis}</p>
+            )}
+          </div>
+
+          {estimate.timeline && (
+            <div className="border-2 border-border bg-card p-5 sm:p-6 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-widest text-primary">
+                {isUrdu ? 'متوقع مدت تکمیل' : 'Estimated Timeline'}
+              </p>
+              <p className="mt-3 text-lg font-black">{estimate.timeline}</p>
+              {estimate.confidence !== undefined && (
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                  {isUrdu ? 'تخمینے کا اعتماد:' : 'AI Estimation Confidence:'} {estimate.confidence}%
+                </p>
+              )}
+            </div>
           )}
         </div>
 
-        {estimate.timeline && (
-          <div className="rounded-2xl border bg-card p-5 shadow-panel sm:p-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-              {isUrdu ? 'متوقع مدت تکمیل' : 'Estimated Timeline'}
-            </p>
-            <p className="mt-3 text-lg font-bold">{estimate.timeline}</p>
-            {estimate.confidence !== undefined && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                {isUrdu ? 'تخمینے کا اعتماد:' : 'AI Estimation Confidence:'} {estimate.confidence}%
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border bg-card p-5 shadow-panel lg:col-span-2 sm:p-6">
-        <p className="mb-5 text-sm font-bold">{isUrdu ? 'تعمیراتی مراحل کی پیش رفت' : 'Project journey'}</p>
-        <div className="grid gap-3 sm:grid-cols-5">
-          {projectProgressStages.map((status, index) => {
-            const activeIndex = projectProgressStages.indexOf(project.progress_stage ?? 'Planning');
-            const complete = index <= activeIndex;
-            const displayLabel = isUrdu ? (stageUrdu[status] || status) : status;
-            return (
-              <div
-                key={status}
-                className={`flex items-center gap-3 rounded-xl border p-3 text-sm font-semibold ${
-                  complete ? 'border-emerald-500/30 bg-emerald-500/[0.06] text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'
-                }`}
-              >
-                <span
-                  className={`grid h-7 w-7 place-items-center rounded-full text-xs ${
-                    complete ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
+        <div className="border-2 border-border bg-card p-5 sm:p-6 shadow-sm lg:col-span-2">
+          <p className="mb-5 text-sm font-black uppercase tracking-wider">{isUrdu ? 'تعمیراتی مراحل کی پیش رفت' : 'Project journey'}</p>
+          <div className="grid gap-3 sm:grid-cols-5">
+            {projectProgressStages.map((status, index) => {
+              const activeIndex = projectProgressStages.indexOf(project.progress_stage ?? 'Planning');
+              const complete = index <= activeIndex;
+              const displayLabel = isUrdu ? (stageUrdu[status] || status) : status;
+              return (
+                <div
+                  key={status}
+                  className={`flex items-center gap-3 border p-3 text-sm font-bold ${
+                    complete ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
                   }`}
                 >
-                  {complete ? <Check className="h-3.5 w-3.5" /> : index + 1}
-                </span>
-                {displayLabel}
-              </div>
-            );
-          })}
+                  <span
+                    className={`grid h-7 w-7 place-items-center text-xs font-black ${
+                      complete ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {complete ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                  </span>
+                  {displayLabel}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
